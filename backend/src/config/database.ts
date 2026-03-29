@@ -1,3 +1,4 @@
+// d:\neiroQC\NeiroWork\backend\src\config\database.ts
 import { Pool } from 'pg';
 import dotenv from 'dotenv';
 
@@ -61,6 +62,44 @@ const createTables = async () => {
         type VARCHAR(100) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Create chat_analysis table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chat_analysis (
+        id SERIAL PRIMARY KEY,
+        chat_id INTEGER REFERENCES chats(id) ON DELETE CASCADE,
+        analysis_text TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        has_new_messages BOOLEAN DEFAULT TRUE
+      )
+    `);
+
+    // Create ai_prompts table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ai_prompts (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) UNIQUE NOT NULL,
+        prompt_text TEXT NOT NULL,
+        version INTEGER DEFAULT 1,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Insert default prompts if they don't exist
+    await pool.query(`
+      INSERT INTO ai_prompts (name, prompt_text, version) 
+      VALUES 
+        ('dialog_analysis', 'Проанализируй этот диалог. Выпиши основные темы, проблемы, договорённости, важные факты. Ответ давать кратко, структурированно.', 1)
+      ON CONFLICT (name) DO NOTHING
+    `);
+
+    await pool.query(`
+      INSERT INTO ai_prompts (name, prompt_text, version) 
+      VALUES 
+        ('neiro_work', 'Ты — менеджер по организации работы. На основе анализа диалога составь: 1. Главные выводы 2. Проблемы, на которые стоит обратить внимание 3. Чек-лист задач (to-do) 4. Рекомендации по дальнейшим действиям Ответ давать по пунктам, чётко, без воды.', 1)
+      ON CONFLICT (name) DO NOTHING
     `);
 
     console.log('Database tables created successfully');
