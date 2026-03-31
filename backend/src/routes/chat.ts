@@ -104,40 +104,48 @@ const chatRoutes = async (app: FastifyInstance) => {
         try {
           // Try to parse JSON content (for messages with images)
           const parsedContent = JSON.parse(row.content);
+
+          // Ensure parsed content is a string or array of objects, not a primitive
+          let finalContent;
+          if (typeof parsedContent === 'string' || Array.isArray(parsedContent)) {
+            finalContent = parsedContent;
+          } else {
+            // If parsed content is a primitive (number, boolean, etc.), treat as string
+            finalContent = String(parsedContent);
+          }
+
           return {
             role: row.role,
-            content: parsedContent
+            content: finalContent
           };
         } catch {
           // If not JSON, use as string
+          // Ensure content is a string, not a primitive
+          let finalContent = String(row.content);
           return {
             role: row.role,
-            content: row.content
+            content: finalContent
           };
         }
       });
 
-      // Get AI response
-      const aiResponse = await getChatCompletion(messages);
+      // Don't generate AI response during message sending
+      // Instead, mark that new messages need to be analyzed
 
-      // Save AI message
-      const aiMessageResult = await pool.query(
-        'INSERT INTO messages (chat_id, parent_id, content, role) VALUES ($1, $2, $3, $4) RETURNING id, parent_id, content, role, created_at',
-        [chat_id, userMessageResult.rows[0].id, aiResponse, 'assistant']
-      );
-
-      // Mark chat analysis as having new messages
+      // Check if we already have a chat analysis record
       const existingAnalysis = await pool.query(
         'SELECT id FROM chat_analysis WHERE chat_id = $1',
         [chat_id]
       );
 
       if (existingAnalysis.rows.length > 0) {
+        // Update existing analysis to mark that it has new messages to process
         await pool.query(
           'UPDATE chat_analysis SET has_new_messages = TRUE WHERE chat_id = $1',
           [chat_id]
         );
       } else {
+        // Create a new analysis record with has_new_messages = TRUE
         await pool.query(
           'INSERT INTO chat_analysis (chat_id, analysis_text, has_new_messages) VALUES ($1, \'\', TRUE)',
           [chat_id]
@@ -145,8 +153,7 @@ const chatRoutes = async (app: FastifyInstance) => {
       }
 
       reply.send({
-        userMessage: userMessageResult.rows[0],
-        aiMessage: aiMessageResult.rows[0]
+        userMessage: userMessageResult.rows[0]
       });
     } catch (error) {
       console.error('Send message error:', error);
@@ -193,27 +200,60 @@ const chatRoutes = async (app: FastifyInstance) => {
         return;
       }
 
-      // Get the dialog analysis prompt
-      const promptResult = await pool.query(
+      // Get chat-specific prompt settings
+      const settingsResult = await pool.query(
+        'SELECT dialog_analysis_prompt FROM chat_prompts_settings WHERE chat_id = $1',
+        [chatId]
+      );
+
+      // Get default dialog analysis prompt
+      const defaultPromptResult = await pool.query(
         'SELECT prompt_text FROM ai_prompts WHERE name = $1',
         ['dialog_analysis']
       );
 
-      if (promptResult.rows.length === 0) {
-        throw new Error('Dialog analysis prompt not found');
+      if (defaultPromptResult.rows.length === 0) {
+        throw new Error('Default dialog analysis prompt not found');
       }
 
-      const prompt = promptResult.rows[0].prompt_text;
+      // Get chat-level custom prompt
+      const chatCustomPromptResult = await pool.query(
+        'SELECT custom_prompt FROM chats WHERE id = $1',
+        [chatId]
+      );
+
+      const defaultPrompt = defaultPromptResult.rows[0].prompt_text;
+      const chatSpecificPrompt = settingsResult.rows[0]?.dialog_analysis_prompt || '';
+      const chatLevelCustomPrompt = chatCustomPromptResult.rows[0]?.custom_prompt || '';
+
+      // Combine prompts in order of priority: default -> chat-specific -> chat-level custom
+      let prompt = defaultPrompt;
+      if (chatSpecificPrompt) {
+        prompt = chatSpecificPrompt;
+      }
+      if (chatLevelCustomPrompt) {
+        prompt += `\n\nAdditional instructions: ${chatLevelCustomPrompt}`;
+      }
+
       const context = messagesResult.rows.map(msg => `${msg.role}: ${msg.content}`).join('\n');
 
       // Get analysis from AI
       const analysis = await getChatCompletionWithPrompt(prompt, context);
 
-      // Save the analysis to the database
-      await pool.query(`
-        INSERT INTO chat_analysis (chat_id, analysis_text, has_new_messages) 
-        VALUES ($1, $2, FALSE)
-      `, [chatId, analysis]);
+      // Save the analysis to the database (update existing or insert new)
+      // First try to update existing analysis
+      const updateResult = await pool.query(
+        'UPDATE chat_analysis SET analysis_text = $1, has_new_messages = FALSE WHERE chat_id = $2',
+        [analysis, chatId]
+      );
+
+      // If no rows were updated, insert a new record
+      if (updateResult.rowCount === 0) {
+        await pool.query(
+          'INSERT INTO chat_analysis (chat_id, analysis_text, has_new_messages) VALUES ($1, $2, FALSE)',
+          [chatId, analysis]
+        );
+      }
 
       reply.send({ analysis });
     } catch (error) {
@@ -272,59 +312,110 @@ const chatRoutes = async (app: FastifyInstance) => {
     try {
       const { chatId } = request.params;
 
-      // First, ensure we have an analysis
-      let analysis = '';
-
-      // Check if we already have a non-expired analysis
-      const existingAnalysisResult = await pool.query(
-        'SELECT analysis_text FROM chat_analysis WHERE chat_id = $1 AND has_new_messages = FALSE',
+      // Get the existing chat analysis
+      const analysisResult = await pool.query(
+        'SELECT analysis_text FROM chat_analysis WHERE chat_id = $1',
         [chatId]
       );
 
-      if (existingAnalysisResult.rows.length > 0) {
-        analysis = existingAnalysisResult.rows[0].analysis_text;
-      } else {
-        // If no existing analysis, trigger analysis first
-        const analyzeResponse = await app.inject({
-          method: 'POST',
-          url: `/api/chat/${chatId}/analyze`,
-          payload: { chat_id: parseInt(chatId) }
+      if (analysisResult.rows.length === 0 || !analysisResult.rows[0].analysis_text) {
+        // If no analysis exists, return a message prompting the user to analyze the dialog first
+        return reply.send({
+          neiro_work_analysis: 'Dialog has not been analyzed yet. Please analyze the dialog first by clicking "Analyze Dialog".',
+          needs_analysis: true
         });
-
-        const analyzeData = JSON.parse(analyzeResponse.payload);
-        analysis = analyzeData.analysis || '';
       }
 
-      if (!analysis || analysis === 'No messages to analyze.') {
-        reply.send({
-          summary: 'No analysis available.',
-          problems: [],
-          todo: [],
-          recommendations: []
-        });
-        return;
-      }
+      const existingAnalysis = analysisResult.rows[0].analysis_text;
 
-      // Get the NeiroWork prompt
-      const promptResult = await pool.query(
+      // Get chat-specific NeiroWork prompt settings
+      const settingsResult = await pool.query(
+        'SELECT neirowork_prompt FROM chat_prompts_settings WHERE chat_id = $1',
+        [chatId]
+      );
+
+      // Get default NeiroWork prompt
+      const defaultPromptResult = await pool.query(
         'SELECT prompt_text FROM ai_prompts WHERE name = $1',
         ['neiro_work']
       );
 
-      if (promptResult.rows.length === 0) {
-        throw new Error('NeiroWork prompt not found');
+      // Get chat-level custom prompt
+      const chatCustomPromptResult = await pool.query(
+        'SELECT custom_prompt FROM chats WHERE id = $1',
+        [chatId]
+      );
+
+      const defaultPrompt = defaultPromptResult.rows[0]?.prompt_text || 'You are NeiroWork AI Assistant. Based on the following dialog analysis, provide strategic insights, identify key themes, highlight important decisions made, and suggest actionable next steps for the team. Focus on extracting business value from the conversation.';
+      const chatSpecificPrompt = settingsResult.rows[0]?.neirowork_prompt || '';
+      const chatLevelCustomPrompt = chatCustomPromptResult.rows[0]?.custom_prompt || '';
+
+      // Combine prompts in order of priority: default -> chat-specific -> chat-level custom
+      let prompt = defaultPrompt;
+      if (chatSpecificPrompt) {
+        prompt = chatSpecificPrompt;
+      }
+      if (chatLevelCustomPrompt) {
+        prompt += `\n\nAdditional instructions: ${chatLevelCustomPrompt}`;
       }
 
-      const prompt = promptResult.rows[0].prompt_text;
-      const neiroWorkResponse = await getChatCompletionWithPrompt(prompt, analysis);
+      // Combine prompt with existing analysis
+      const fullPrompt = `${prompt}\n\nDialog Analysis: ${existingAnalysis}`;
 
-      // Parse the response into structured data
-      const parsedResponse = parseNeiroWorkResponse(neiroWorkResponse);
+      const neiroWorkResponse = await getChatCompletionWithPrompt(fullPrompt, existingAnalysis);
 
-      reply.send(parsedResponse);
+      reply.send({
+        neiro_work_analysis: neiroWorkResponse,
+        needs_analysis: false
+      });
     } catch (error) {
       console.error('NeiroWork analysis error:', error);
-      reply.status(500).send({ error: 'Failed to get NeiroWork analysis' });
+      reply.status(500).send({ error: 'Failed to perform NeiroWork analysis' });
+    }
+  });
+
+  // Get custom prompt for a chat
+  app.get('/:chatId/custom-prompt', async (request: FastifyRequest<{ Params: { chatId: string } }>, reply: FastifyReply) => {
+    try {
+      const { chatId } = request.params;
+
+      const result = await pool.query(
+        'SELECT custom_prompt FROM chats WHERE id = $1',
+        [chatId]
+      );
+
+      if (result.rows.length === 0) {
+        reply.status(404).send({ error: 'Chat not found' });
+        return;
+      }
+
+      reply.send({ custom_prompt: result.rows[0].custom_prompt });
+    } catch (error) {
+      console.error('Get custom prompt error:', error);
+      reply.status(500).send({ error: 'Failed to get custom prompt' });
+    }
+  });
+
+  // Update custom prompt for a chat
+  app.put('/:chatId/custom-prompt', async (request: FastifyRequest<{ Params: { chatId: string }; Body: { custom_prompt: string } }>, reply: FastifyReply) => {
+    try {
+      const { chatId } = request.params;
+      const { custom_prompt } = request.body;
+
+      const result = await pool.query(
+        'UPDATE chats SET custom_prompt = $1 WHERE id = $2 RETURNING id',
+        [custom_prompt, chatId]
+      );
+
+      if (result.rows.length === 0) {
+        reply.status(404).send({ error: 'Chat not found' });
+        return;
+      }
+
+      reply.send({ success: true, message: 'Custom prompt updated successfully' });
+    } catch (error) {
+      console.error('Update custom prompt error:', error);
+      reply.status(500).send({ error: 'Failed to update custom prompt' });
     }
   });
 };

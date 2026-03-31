@@ -1,6 +1,7 @@
 // d:\neiroQC\NeiroWork\frontend\src\App.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import ReactMarkdown from 'react-markdown';
 import * as S from './App.styles';
 
 function App() {
@@ -15,9 +16,12 @@ function App() {
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [uploadedImages, setUploadedImages] = useState([]);
   const [analysis, setAnalysis] = useState(null);
-  const [neiroWork, setNeiroWork] = useState(null);
+
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [showNeiroWork, setShowNeiroWork] = useState(false);
+  const [showNeiroWorkWindow, setShowNeiroWorkWindow] = useState(false);
+  const [allAnalyses, setAllAnalyses] = useState([]);
+  const [analysesLoading, setAnalysesLoading] = useState(false);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [neiroWorkLoading, setNeiroWorkLoading] = useState(false);
   const messagesEndRef = useRef(null);
@@ -95,6 +99,46 @@ function App() {
     }
   };
 
+  const fetchAllAnalyses = async () => {
+    setAnalysesLoading(true);
+    try {
+      // First get all chats
+      const chatsResponse = await axios.get('/api/chat/list');
+      const chats = chatsResponse.data;
+
+      // For each chat, get its analysis
+      const analysesPromises = chats.map(async (chat) => {
+        try {
+          const analysisResponse = await axios.get(`/api/chat/${chat.id}/analysis`);
+          // Use analysis_text if it exists, otherwise use analysis, and fallback to null
+          const analysisText = analysisResponse.data.analysis_text !== undefined ?
+            analysisResponse.data.analysis_text :
+            analysisResponse.data.analysis;
+
+          return {
+            chat,
+            analysis: analysisText,
+            hasNewMessages: analysisResponse.data.has_new_messages
+          };
+        } catch (error) {
+          console.error(`Error fetching analysis for chat ${chat.id}:`, error);
+          return {
+            chat,
+            analysis: null,
+            hasNewMessages: true
+          };
+        }
+      });
+
+      const analyses = await Promise.all(analysesPromises);
+      setAllAnalyses(analyses);
+    } catch (error) {
+      console.error('Error fetching all analyses:', error);
+    } finally {
+      setAnalysesLoading(false);
+    }
+  };
+
   const createChat = async () => {
     if (!newChatTopic.trim()) return;
     try {
@@ -124,7 +168,6 @@ function App() {
       setMessages([
         ...messages,
         response.data.userMessage,
-        response.data.aiMessage,
       ]);
       setNewMessage('');
       setUploadedFiles([]);
@@ -224,11 +267,22 @@ function App() {
 
     setAnalysisLoading(true);
     try {
+      console.log('Starting chat analysis for chat ID:', currentChat.id);
       const response = await axios.post(`/api/chat/${currentChat.id}/analyze`);
-      setAnalysis(response.data.analysis);
-      setShowAnalysis(true);
-      // Hide NeiroWork when showing analysis
-      setShowNeiroWork(false);
+      console.log('Analysis response:', response.data);
+
+      if (response.data && response.data.analysis) {
+        console.log('Setting analysis:', response.data.analysis);
+        setAnalysis(response.data.analysis);
+        setShowAnalysis(true);
+
+        // Refresh all analyses to reflect the updated analysis
+        setTimeout(() => {
+          fetchAllAnalyses();
+        }, 2000);
+      } else {
+        console.error('Invalid analysis response:', response.data);
+      }
     } catch (error) {
       console.error('Error analyzing chat:', error);
     } finally {
@@ -236,22 +290,7 @@ function App() {
     }
   };
 
-  const getNeiroWork = async () => {
-    if (!currentChat) return;
 
-    setNeiroWorkLoading(true);
-    try {
-      const response = await axios.post(`/api/chat/${currentChat.id}/neiro-work`);
-      setNeiroWork(response.data);
-      setShowNeiroWork(true);
-      // Hide analysis when showing NeiroWork
-      setShowAnalysis(false);
-    } catch (error) {
-      console.error('Error getting NeiroWork:', error);
-    } finally {
-      setNeiroWorkLoading(false);
-    }
-  };
 
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
@@ -269,7 +308,12 @@ function App() {
       {/* Sidebar */}
       <S.Sidebar>
         <S.SidebarHeader>
-          <S.AppTitle>NeiroWork</S.AppTitle>
+          <S.AppTitleButton onClick={() => {
+            setShowNeiroWorkWindow(true);
+            fetchAllAnalyses();
+          }}>
+            NeiroWork
+          </S.AppTitleButton>
           <S.NewChatButton onClick={() => setShowModal(true)}>
             + New Chat
           </S.NewChatButton>
@@ -309,9 +353,6 @@ function App() {
                   <S.AnalyzeButton onClick={analyzeChat} disabled={analysisLoading}>
                     {analysisLoading ? 'Analyzing...' : 'Analyze Dialog'}
                   </S.AnalyzeButton>
-                  <S.NeiroWorkButton onClick={getNeiroWork} disabled={neiroWorkLoading}>
-                    {neiroWorkLoading ? 'Processing...' : 'NeiroWork'}
-                  </S.NeiroWorkButton>
                   <S.DeleteChatButton onClick={deleteChat}>
                     Delete Chat
                   </S.DeleteChatButton>
@@ -325,7 +366,9 @@ function App() {
                     <S.AnalysisTitle>Dialog Analysis</S.AnalysisTitle>
                     <S.CloseButton onClick={() => setShowAnalysis(false)}>×</S.CloseButton>
                   </S.AnalysisHeader>
-                  <S.AnalysisContent>{analysis}</S.AnalysisContent>
+                  <S.AnalysisContent>
+                    <ReactMarkdown>{analysis}</ReactMarkdown>
+                  </S.AnalysisContent>
                 </S.AnalysisContainer>
               )}
 
@@ -333,10 +376,10 @@ function App() {
               {showNeiroWork && neiroWork && (
                 <S.NeiroWorkContainer>
                   <S.NeiroWorkHeader>
-                    <S.NeiroWorkTitle>NeiroWork Assistant</S.NeiroWorkTitle>
+                    <S.NeiroWorkContainerTitle>NeiroWork Assistant</S.NeiroWorkContainerTitle>
                     <S.CloseButton onClick={() => setShowNeiroWork(false)}>×</S.CloseButton>
                   </S.NeiroWorkHeader>
-                  <S.NeiroWorkContent>
+                  <S.NeiroWorkContainerContent>
                     {neiroWork.summary && (
                       <S.Section>
                         <S.SectionTitle>Summary</S.SectionTitle>
@@ -376,7 +419,7 @@ function App() {
                         </S.List>
                       </S.Section>
                     )}
-                  </S.NeiroWorkContent>
+                  </S.NeiroWorkContainerContent>
                 </S.NeiroWorkContainer>
               )}
 
@@ -554,8 +597,8 @@ function App() {
       {/* Create Chat Modal */}
       {
         showModal && (
-          <S.CreateChatModal>
-            <S.ModalContent>
+          <S.CreateChatModal onClick={() => setShowModal(false)}>
+            <S.ModalContent onClick={(e) => e.stopPropagation()}>
               <S.ModalTitle>Create New Chat</S.ModalTitle>
               <S.ModalInput
                 type="text"
@@ -575,6 +618,101 @@ function App() {
                 >
                   Create
                 </S.ConfirmButton>
+              </S.ModalButtons>
+            </S.ModalContent>
+          </S.CreateChatModal>
+        )
+      }
+
+      {/* NeiroWork Window */}
+      {
+        showNeiroWorkWindow && (
+          <S.CreateChatModal onClick={() => setShowNeiroWorkWindow(false)}>
+            <S.ModalContent
+              style={{
+                width: '80%',
+                maxWidth: '800px',
+                maxHeight: '80vh',
+                overflowY: 'auto',
+                position: 'relative',
+                display: 'flex',
+                flexDirection: 'column'
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <S.NeiroWorkWindowTitle>NeiroWork Overview</S.NeiroWorkWindowTitle>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>Analysis of all chat dialogs</p>
+                <S.AnalyzeButton
+                  onClick={fetchAllAnalyses}
+                  disabled={analysesLoading}
+                  style={{ fontSize: '12px', padding: '6px 10px' }}
+                >
+                  {analysesLoading ? 'Loading...' : 'Refresh Analyses'}
+                </S.AnalyzeButton>
+              </div>
+
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                {analysesLoading ? (
+                  <S.LoadingText>Loading analyses...</S.LoadingText>
+                ) : allAnalyses.length === 0 ? (
+                  <p style={{ textAlign: 'center', color: '#666' }}>No chats found. Create a chat to start analysis.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                    {allAnalyses.map((item) => (
+                      <div key={item.chat.id} style={{
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '8px',
+                        padding: '15px',
+                        backgroundColor: item.hasNewMessages ? '#fff3cd' : '#f8f9fa',
+                        margin: '10px'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                          <h4 style={{ margin: 0, fontSize: '16px' }}>{item.chat.topic}</h4>
+                          <S.AnalyzeButton
+                            onClick={() => {
+                              setCurrentChat(item.chat);
+                              setShowNeiroWorkWindow(false);
+                            }}
+                            style={{ fontSize: '12px', padding: '4px 8px' }}
+                          >
+                            View Chat
+                          </S.AnalyzeButton>
+                        </div>
+                        <div style={{
+                          margin: '10px 0',
+                          fontSize: '14px',
+                          lineHeight: '1.4',
+                          color: '#555'
+                        }}>
+                          {item.analysis ? (
+                            <ReactMarkdown>{item.analysis}</ReactMarkdown>
+                          ) : (
+                            'No analysis available. Click "Analyze Dialog" in the chat to generate.'
+                          )}
+                        </div>
+                        <div style={{
+                          fontSize: '12px',
+                          color: '#999',
+                          display: 'flex',
+                          justifyContent: 'space-between'
+                        }}>
+                          <span>Created: {new Date(item.chat.created_at).toLocaleString()}</span>
+                          {item.hasNewMessages && (
+                            <span style={{ color: '#ffc107', fontWeight: '500' }}>New messages</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <S.ModalButtons style={{ marginTop: '20px', paddingTop: '15px', margin: '15px' }}>
+                <S.CancelButton
+                  onClick={() => setShowNeiroWorkWindow(false)}
+                >
+                  Close
+                </S.CancelButton>
               </S.ModalButtons>
             </S.ModalContent>
           </S.CreateChatModal>

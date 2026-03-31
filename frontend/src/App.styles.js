@@ -21,27 +21,21 @@ export const SidebarHeader = styled.div`
   border-bottom: 1px solid #e0e0e0;
 `;
 
-export const AppTitle = styled.h1`
-  font-size: 20px;
-  font-weight: 600;
-  color: #333;
-`;
 
 export const NewChatButton = styled.button`
   width: 100%;
   padding: 10px;
   margin: 10px 0;
-  background-color: #007bff;
+  background-color: #cadae9;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
   transition: background-color 0.2s;
 
   &:hover {
-    background-color: #0069d9;
+    background-color: #5a6268;
   }
 `;
 
@@ -115,24 +109,34 @@ export const AnalyzeButton = styled.button`
   }
 `;
 
-export const NeiroWorkButton = styled.button`
-  background-color: #ffc107;
+export const AppTitleButton = styled.button`
+  background-color: #f0eee7;
   color: #212529;
-  border: none;
-  border-radius: 4px;
-  padding: 8px 12px;
+  border: 2px solid #ffffff;
+  border-radius: 8px;
+  padding: 10px 15px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  transition: background-color 0.2s;
+  transition: all 0.3s ease;
+  box-shadow: 
+    0 4px 8px rgba(0, 0, 0, 0.2),
+    0 6px 12px rgba(0, 0, 0, 0.15),
+    0 8px 16px rgba(0, 0, 0, 0.1);
 
   &:hover:not(:disabled) {
     background-color: #e0a800;
+    transform: translateY(-2px);
+    box-shadow: 
+      0 6px 12px rgba(0, 0, 0, 0.25),
+      0 8px 16px rgba(0, 0, 0, 0.2),
+      0 10px 20px rgba(0, 0, 0, 0.15);
   }
 
   &:disabled {
-    background-color: #6c757d;
+    background-color: #d39e00;
     cursor: not-allowed;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 `;
 
@@ -148,6 +152,38 @@ export const DeleteChatButton = styled.button`
 
   &:hover {
     background-color: #c82333;
+  }
+`;
+
+export const SettingsButton = styled.button`
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+  margin-right: 5px;
+
+  &:hover {
+    background-color: #5a6268;
+  }
+`;
+
+export const AdvancedSettingsButton = styled.button`
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+  margin-right: 5px;
+
+  &:hover {
+    background-color: #218838;
   }
 `;
 
@@ -260,9 +296,71 @@ export const AnalysisTitle = styled.h3`
 
 export const AnalysisContent = styled.div`
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: #555;
-  white-space: pre-wrap;
+  
+  /* Markdown styles */
+  h1, h2, h3, h4, h5, h6 {
+    margin: 20px 0 10px 0;
+    font-weight: 600;
+  }
+  
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.4em; }
+  h3 { font-size: 1.2em; }
+  
+  p {
+    margin: 10px 0;
+  }
+  
+  ul, ol {
+    margin: 12px 0;
+    padding-left: 25px;
+  }
+  
+  /* Nested lists */
+  ul ul, ul ol, ol ul, ol ol {
+    margin: 8px 0;
+    padding-left: 20px;
+  }
+  
+  li {
+    margin: 6px 0;
+    line-height: 1.5;
+  }
+  
+  strong {
+    font-weight: 600;
+  }
+  
+  code {
+    background-color: #f0f0f0;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+  }
+  
+  pre {
+    background-color: #f0f0f0;
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 10px 0;
+  }
+  
+  pre code {
+    background: none;
+    padding: 0;
+  }
+  
+  blockquote {
+    border-left: 4px solid #007bff;
+    padding-left: 15px;
+    margin: 15px 0;
+    color: #666;
+    font-style: italic;
+  }
 `;
 
 export const NeiroWorkContainer = styled.div`
@@ -282,17 +380,80 @@ export const NeiroWorkHeader = styled.div`
   border-bottom: 1px solid #ffeaa7;
 `;
 
-export const NeiroWorkTitle = styled.h3`
+export const NeiroWorkContainerTitle = styled.h3`
   font-size: 16px;
   font-weight: 600;
   margin: 0;
   color: #856404;
 `;
 
-export const NeiroWorkContent = styled.div`
+export const NeiroWorkContainerContent = styled.div`
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.6;
   color: #856404;
+  
+  /* Markdown styles */
+  h1, h2, h3, h4, h5, h6 {
+    margin: 20px 0 10px 0;
+    font-weight: 600;
+  }
+  
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.4em; }
+  h3 { font-size: 1.2em; }
+  
+  p {
+    margin: 10px 0;
+  }
+  
+  ul, ol {
+    margin: 12px 0;
+    padding-left: 25px;
+  }
+  
+  /* Nested lists */
+  ul ul, ul ol, ol ul, ol ol {
+    margin: 8px 0;
+    padding-left: 20px;
+  }
+  
+  li {
+    margin: 6px 0;
+    line-height: 1.5;
+  }
+  
+  strong {
+    font-weight: 600;
+  }
+  
+  code {
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+  }
+  
+  pre {
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 10px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 10px 0;
+  }
+  
+  pre code {
+    background: none;
+    padding: 0;
+  }
+  
+  blockquote {
+    border-left: 4px solid #ffc107;
+    padding-left: 15px;
+    margin: 15px 0;
+    color: #666;
+    font-style: italic;
+  }
 `;
 
 export const Section = styled.div`
@@ -492,7 +653,7 @@ export const CreateChatModal = styled.div`
 `;
 
 export const ModalContent = styled.div`
-  background-color: #fff;
+  // background-color: #ffffff00;
   padding: 30px;
   border-radius: 8px;
   width: 90%;
@@ -513,6 +674,24 @@ export const ModalInput = styled.input`
   border-radius: 4px;
   font-size: 14px;
   margin-bottom: 20px;
+
+  &:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+  }
+`;
+
+export const ModalTextarea = styled.textarea`
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 20px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 120px;
 
   &:focus {
     outline: none;
@@ -553,4 +732,69 @@ export const ConfirmButton = styled.button`
   &:hover {
     background-color: #0056b3;
   }
+`;
+
+export const NeiroWorkWindow = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+export const NeiroWorkWindowContent = styled.div`
+  background-color: #fff;
+  padding: 30px;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 800px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+`;
+
+export const NeiroWorkWindowTitle = styled.h2`
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 20px;
+`;
+
+export const ChatAnalysisCard = styled.div`
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  background-color: #f8f9fa;
+`;
+
+export const ChatAnalysisHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+`;
+
+export const ChatAnalysisTitle = styled.h4`
+  margin: 0;
+  font-size: 16px;
+`;
+
+export const ChatAnalysisContent = styled.div`
+  font-size: 14px;
+  line-height: 1.4;
+  color: #555;
+  white-space: pre-wrap;
+  margin: 10px 0;
+`;
+
+export const ChatAnalysisFooter = styled.div`
+  font-size: 12px;
+  color: #999;
+  display: flex;
+  justify-content: space-between;
 `;

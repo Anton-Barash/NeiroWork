@@ -35,6 +35,7 @@ const createTables = async () => {
       CREATE TABLE IF NOT EXISTS chats (
         id SERIAL PRIMARY KEY,
         topic VARCHAR(255) NOT NULL,
+        custom_prompt TEXT DEFAULT '',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
