@@ -1,4 +1,3 @@
-// d:\neiroQC\NeiroWork\frontend\src\App.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
@@ -24,6 +23,13 @@ function App() {
   const [analysesLoading, setAnalysesLoading] = useState(false);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [neiroWorkLoading, setNeiroWorkLoading] = useState(false);
+  const [customPrompt, setCustomPrompt] = useState('');
+  const [showCustomPromptSettings, setShowCustomPromptSettings] = useState(false);
+  const [promptSettings, setPromptSettings] = useState({
+    dialog_analysis_prompt: '',
+    neirowork_prompt: ''
+  });
+  const [showAdvancedPromptSettings, setShowAdvancedPromptSettings] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Fetch chats on component mount
@@ -38,6 +44,10 @@ function App() {
       fetchFiles();
       // Also fetch existing analysis if available
       fetchAnalysis();
+      // Fetch custom prompt if available
+      fetchCustomPrompt();
+      // Fetch prompt settings if available
+      fetchPromptSettings();
     }
   }, [currentChat]);
 
@@ -96,6 +106,51 @@ function App() {
       }
     } catch (error) {
       console.error('Error fetching analysis:', error);
+    }
+  };
+
+  const fetchCustomPrompt = async () => {
+    if (!currentChat) return;
+    try {
+      const response = await axios.get(`/api/chat/${currentChat.id}/custom-prompt`);
+      setCustomPrompt(response.data.custom_prompt || '');
+    } catch (error) {
+      console.error('Error fetching custom prompt:', error);
+    }
+  };
+
+  const updateCustomPrompt = async () => {
+    if (!currentChat) return;
+    try {
+      await axios.put(`/api/chat/${currentChat.id}/custom-prompt`, {
+        custom_prompt: customPrompt
+      });
+      setShowCustomPromptSettings(false);
+    } catch (error) {
+      console.error('Error updating custom prompt:', error);
+    }
+  };
+
+  const fetchPromptSettings = async () => {
+    if (!currentChat) return;
+    try {
+      const response = await axios.get(`/api/chat/${currentChat.id}/prompt-settings`);
+      setPromptSettings(response.data);
+    } catch (error) {
+      console.error('Error fetching prompt settings:', error);
+    }
+  };
+
+  const updatePromptSettings = async () => {
+    if (!currentChat) return;
+    try {
+      await axios.put(`/api/chat/${currentChat.id}/prompt-settings`, {
+        dialog_analysis_prompt: promptSettings.dialog_analysis_prompt,
+        neirowork_prompt: promptSettings.neirowork_prompt
+      });
+      setShowAdvancedPromptSettings(false);
+    } catch (error) {
+      console.error('Error updating prompt settings:', error);
     }
   };
 
@@ -350,6 +405,12 @@ function App() {
               <S.ChatHeader>
                 <S.ChatTitle>{currentChat.topic}</S.ChatTitle>
                 <S.HeaderButtonsContainer>
+                  <S.SettingsButton onClick={() => setShowCustomPromptSettings(true)} title="Chat settings">
+                    ⚙️
+                  </S.SettingsButton>
+                  <S.AdvancedSettingsButton onClick={() => setShowAdvancedPromptSettings(true)} title="Advanced prompt settings">
+                    ✍️
+                  </S.AdvancedSettingsButton>
                   <S.AnalyzeButton onClick={analyzeChat} disabled={analysisLoading}>
                     {analysisLoading ? 'Analyzing...' : 'Analyze Dialog'}
                   </S.AnalyzeButton>
@@ -617,6 +678,140 @@ function App() {
                   onClick={createChat}
                 >
                   Create
+                </S.ConfirmButton>
+              </S.ModalButtons>
+            </S.ModalContent>
+          </S.CreateChatModal>
+        )
+      }
+
+      {/* Custom Prompt Settings Modal */}
+      {
+        showCustomPromptSettings && (
+          <S.CreateChatModal onClick={() => setShowCustomPromptSettings(false)}>
+            <S.ModalContent onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: '600px' }}>
+              <S.ModalTitle>Chat Settings - Custom Prompt</S.ModalTitle>
+              <S.ModalTextarea
+                value={customPrompt}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+                placeholder="Enter your custom prompt here...\nThis will be added to the default analysis prompt when analyzing this chat.\nFor example: 'Focus on technical aspects' or 'Summarize in bullet points'"
+                rows={6}
+              />
+              <S.ModalButtons>
+                <S.CancelButton onClick={() => setShowCustomPromptSettings(false)}>
+                  Cancel
+                </S.CancelButton>
+                <S.ConfirmButton onClick={updateCustomPrompt}>
+                  Save Prompt
+                </S.ConfirmButton>
+              </S.ModalButtons>
+            </S.ModalContent>
+          </S.CreateChatModal>
+        )
+      }
+
+      {/* Advanced Prompt Settings Modal */}
+      {
+        showAdvancedPromptSettings && (
+          <S.CreateChatModal onClick={() => setShowAdvancedPromptSettings(false)}>
+            <S.ModalContent onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: '700px' }}>
+              <S.ModalTitle>Advanced Prompt Settings</S.ModalTitle>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                  Dialog Analysis Prompt:
+                </label>
+                <S.ModalTextarea
+                  value={promptSettings.dialog_analysis_prompt}
+                  onChange={(e) => setPromptSettings({ ...promptSettings, dialog_analysis_prompt: e.target.value })}
+                  placeholder={`Use this to override the default dialog analysis prompt for this chat...\nDefault: ${promptSettings.default_dialog_analysis_prompt || 'Loading...'}`}
+                  rows={5}
+                />
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>NeiroWork Prompt:</label>
+                <S.ModalTextarea
+                  value={promptSettings.neirowork_prompt}
+                  onChange={(e) => setPromptSettings({ ...promptSettings, neirowork_prompt: e.target.value })}
+                  placeholder={`Use this to override the default NeiroWork prompt for this chat...\nDefault: ${promptSettings.default_neirowork_prompt || 'Loading...'}`}
+                  rows={5}
+                />
+              </div>
+
+              <S.ModalButtons>
+                <S.CancelButton onClick={() => setShowAdvancedPromptSettings(false)}>
+                  Cancel
+                </S.CancelButton>
+                <S.ConfirmButton onClick={updatePromptSettings}>
+                  Save Settings
+                </S.ConfirmButton>
+              </S.ModalButtons>
+            </S.ModalContent>
+          </S.CreateChatModal>
+        )
+      }
+
+      {/* Custom Prompt Settings Modal */}
+      {
+        showCustomPromptSettings && (
+          <S.CreateChatModal onClick={() => setShowCustomPromptSettings(false)}>
+            <S.ModalContent onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: '600px' }}>
+              <S.ModalTitle>Chat Settings - Custom Prompt</S.ModalTitle>
+              <S.ModalTextarea
+                value={customPrompt}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+                placeholder="Enter your custom prompt here...\nThis will be added to the default analysis prompt when analyzing this chat.\nFor example: 'Focus on technical aspects' or 'Summarize in bullet points'"
+                rows={6}
+              />
+              <S.ModalButtons>
+                <S.CancelButton onClick={() => setShowCustomPromptSettings(false)}>
+                  Cancel
+                </S.CancelButton>
+                <S.ConfirmButton onClick={updateCustomPrompt}>
+                  Save Prompt
+                </S.ConfirmButton>
+              </S.ModalButtons>
+            </S.ModalContent>
+          </S.CreateChatModal>
+        )
+      }
+
+      {/* Advanced Prompt Settings Modal */}
+      {
+        showAdvancedPromptSettings && (
+          <S.CreateChatModal onClick={() => setShowAdvancedPromptSettings(false)}>
+            <S.ModalContent onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: '700px' }}>
+              <S.ModalTitle>Advanced Prompt Settings</S.ModalTitle>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
+                  Dialog Analysis Prompt:
+                </label>
+                <S.ModalTextarea
+                  value={promptSettings.dialog_analysis_prompt}
+                  onChange={(e) => setPromptSettings({ ...promptSettings, dialog_analysis_prompt: e.target.value })}
+                  placeholder={`Use this to override the default dialog analysis prompt for this chat...\nDefault: ${promptSettings.default_dialog_analysis_prompt || 'Loading...'}`}
+                  rows={5}
+                />
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>NeiroWork Prompt:</label>
+                <S.ModalTextarea
+                  value={promptSettings.neirowork_prompt}
+                  onChange={(e) => setPromptSettings({ ...promptSettings, neirowork_prompt: e.target.value })}
+                  placeholder={`Use this to override the default NeiroWork prompt for this chat...\nDefault: ${promptSettings.default_neirowork_prompt || 'Loading...'}`}
+                  rows={5}
+                />
+              </div>
+
+              <S.ModalButtons>
+                <S.CancelButton onClick={() => setShowAdvancedPromptSettings(false)}>
+                  Cancel
+                </S.CancelButton>
+                <S.ConfirmButton onClick={updatePromptSettings}>
+                  Save Settings
                 </S.ConfirmButton>
               </S.ModalButtons>
             </S.ModalContent>
