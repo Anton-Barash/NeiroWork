@@ -12,7 +12,9 @@ import fileRoutes from './routes/files';
 dotenv.config();
 
 const app = fastify({
-  logger: true
+  logger: {
+    level: 'error'
+  }
 });
 
 // Middleware
@@ -37,6 +39,10 @@ app.register(staticPlugin, {
 app.register(chatRoutes, { prefix: '/api/chat' });
 app.register(fileRoutes, { prefix: '/api/files' });
 
+// Import prompts routes
+import promptRoutes from './routes/prompts';
+app.register(promptRoutes, { prefix: '/api/prompts' });
+
 // Health check
 app.get('/api/health', async (request, reply) => {
   return { status: 'ok' };
@@ -47,7 +53,7 @@ const start = async () => {
   try {
     // Connect to database
     await connectDB();
-    
+
     // Start server
     await app.listen({ port: parseInt(process.env.PORT || '3001'), host: '0.0.0.0' });
     console.log(`Server running on port ${process.env.PORT || '3001'}`);

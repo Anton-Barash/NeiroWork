@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 import * as S from './App.styles';
+import PromptSettingsModal from './components/modals/PromptSettingsModal';
+import GlobalPromptSettingsModal from './components/modals/GlobalPromptSettingsModal';
+import NeiroWorkPromptSettingsModal from './components/modals/NeiroWorkPromptSettingsModal';
 
 function App() {
   const [chats, setChats] = useState([]);
@@ -30,6 +33,11 @@ function App() {
     neirowork_prompt: ''
   });
   const [showAdvancedPromptSettings, setShowAdvancedPromptSettings] = useState(false);
+  const [showGlobalPromptSettings, setShowGlobalPromptSettings] = useState(false);
+  const [useCustomPrompt, setUseCustomPrompt] = useState(false);
+  const [showSidebarMenu, setShowSidebarMenu] = useState(false);
+  const [showChatMenu, setShowChatMenu] = useState(false);
+  const [showNeiroWorkMenu, setShowNeiroWorkMenu] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Fetch chats on component mount
@@ -55,6 +63,39 @@ function App() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Close modals on Escape key
+  useEffect(() => {
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') {
+        setShowModal(false);
+        setShowCustomPromptSettings(false);
+        setShowNeiroWorkWindow(false);
+        setShowSidebarMenu(false);
+        setShowChatMenu(false);
+        setShowNeiroWorkMenu(false); // Close NeiroWork menu as well
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.sidebar-menu')) {
+        setShowSidebarMenu(false);
+      }
+      if (!e.target.closest('.neirowork-menu')) {
+        setShowNeiroWorkMenu(false);
+      }
+      if (!e.target.closest('.chat-menu')) {
+        setShowChatMenu(false);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   const fetchChats = async () => {
     try {
@@ -141,6 +182,15 @@ function App() {
     }
   };
 
+  const fetchGlobalPrompts = async () => {
+    try {
+      const response = await axios.get('/api/prompts');
+      console.log('API /api/prompts response:', response.data);
+    } catch (error) {
+      console.error('Error fetching global prompts:', error);
+    }
+  };
+
   const updatePromptSettings = async () => {
     if (!currentChat) return;
     try {
@@ -148,7 +198,7 @@ function App() {
         dialog_analysis_prompt: promptSettings.dialog_analysis_prompt,
         neirowork_prompt: promptSettings.neirowork_prompt
       });
-      setShowAdvancedPromptSettings(false);
+      setShowCustomPromptSettings(false);
     } catch (error) {
       console.error('Error updating prompt settings:', error);
     }
@@ -363,12 +413,28 @@ function App() {
       {/* Sidebar */}
       <S.Sidebar>
         <S.SidebarHeader>
-          <S.AppTitleButton onClick={() => {
-            setShowNeiroWorkWindow(true);
-            fetchAllAnalyses();
-          }}>
-            NeiroWork
-          </S.AppTitleButton>
+          <S.SidebarTopRow>
+            <S.AppTitleButton onClick={() => {
+              setShowNeiroWorkWindow(true);
+              fetchAllAnalyses();
+            }}>
+              NeiroWork
+            </S.AppTitleButton>
+            <S.MoreButton className="sidebar-menu" onClick={() => setShowSidebarMenu(!showSidebarMenu)}>
+              ...
+            </S.MoreButton>
+            {showSidebarMenu && (
+              <S.DropdownMenu className="sidebar-menu">
+                <S.DropdownItem onClick={() => {
+
+                  setShowAdvancedPromptSettings(true);
+                  setShowSidebarMenu(false);
+                }}>
+                  Neiro Work Prompt Settings
+                </S.DropdownItem>
+              </S.DropdownMenu>
+            )}
+          </S.SidebarTopRow>
           <S.NewChatButton onClick={() => setShowModal(true)}>
             + New Chat
           </S.NewChatButton>
@@ -404,20 +470,26 @@ function App() {
               {/* Chat Header */}
               <S.ChatHeader>
                 <S.ChatTitle>{currentChat.topic}</S.ChatTitle>
-                <S.HeaderButtonsContainer>
-                  <S.SettingsButton onClick={() => setShowCustomPromptSettings(true)} title="Chat settings">
-                    ⚙️
-                  </S.SettingsButton>
-                  <S.AdvancedSettingsButton onClick={() => setShowAdvancedPromptSettings(true)} title="Advanced prompt settings">
-                    ✍️
-                  </S.AdvancedSettingsButton>
-                  <S.AnalyzeButton onClick={analyzeChat} disabled={analysisLoading}>
-                    {analysisLoading ? 'Analyzing...' : 'Analyze Dialog'}
-                  </S.AnalyzeButton>
-                  <S.DeleteChatButton onClick={deleteChat}>
-                    Delete Chat
-                  </S.DeleteChatButton>
-                </S.HeaderButtonsContainer>
+                <div style={{ position: 'relative' }}>
+                  <S.HeaderButtonsContainer>
+                    <S.AnalyzeButton onClick={analyzeChat} disabled={analysisLoading}>
+                      {analysisLoading ? 'Analyzing...' : 'Analyze Dialog'}
+                    </S.AnalyzeButton>
+                    <S.MoreButton className="chat-menu" onClick={() => setShowChatMenu(!showChatMenu)}>
+                      ...
+                    </S.MoreButton>
+                  </S.HeaderButtonsContainer>
+                  {showChatMenu && (
+                    <S.DropdownMenu className="chat-menu" style={{ right: 0, left: 'auto' }}>
+                      <S.DropdownItem onClick={() => { setShowCustomPromptSettings(true); setShowChatMenu(false); }}>
+                        Настройки промпта чата
+                      </S.DropdownItem>
+                      <S.DropdownItem onClick={() => { deleteChat(); setShowChatMenu(false); }} style={{ color: '#dc3545' }}>
+                        Delete
+                      </S.DropdownItem>
+                    </S.DropdownMenu>
+                  )}
+                </div>
               </S.ChatHeader>
 
               {/* Analysis Display */}
@@ -489,6 +561,11 @@ function App() {
                 {
                   messages.map((message) => {
                     let content;
+                    /*
+                  ❗ POTENTIAL ERROR: JSON.parse without type checking can cause crashes
+                     If message.content is not a string, JSON.parse will throw an error
+                     FIX: Check if message.content is a string before parsing
+                  */
                     try {
                       // Try to parse JSON content (for messages with images)
                       const parsedContent = JSON.parse(message.content);
@@ -685,91 +762,74 @@ function App() {
         )
       }
 
-      {/* Custom Prompt Settings Modal */}
+      {/* Prompt Settings Modal - Combined */}
       {
         showCustomPromptSettings && (
           <S.CreateChatModal onClick={() => setShowCustomPromptSettings(false)}>
-            <S.ModalContent onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: '600px' }}>
-              <S.ModalTitle>Chat Settings - Custom Prompt</S.ModalTitle>
-              <S.ModalTextarea
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder="Enter your custom prompt here...\nThis will be added to the default analysis prompt when analyzing this chat.\nFor example: 'Focus on technical aspects' or 'Summarize in bullet points'"
-                rows={6}
-              />
-              <S.ModalButtons>
-                <S.CancelButton onClick={() => setShowCustomPromptSettings(false)}>
-                  Cancel
-                </S.CancelButton>
-                <S.ConfirmButton onClick={updateCustomPrompt}>
-                  Save Prompt
-                </S.ConfirmButton>
-              </S.ModalButtons>
-            </S.ModalContent>
-          </S.CreateChatModal>
-        )
-      }
-
-      {/* Advanced Prompt Settings Modal */}
-      {
-        showAdvancedPromptSettings && (
-          <S.CreateChatModal onClick={() => setShowAdvancedPromptSettings(false)}>
             <S.ModalContent onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: '700px' }}>
-              <S.ModalTitle>Advanced Prompt Settings</S.ModalTitle>
+              <S.ModalTitle>Настройки промпта анализа</S.ModalTitle>
 
+              {/* Global Prompt */}
               <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                  Dialog Analysis Prompt:
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#343a40' }}>
+                  Общий промт (для всех чатов):
                 </label>
                 <S.ModalTextarea
-                  value={promptSettings.dialog_analysis_prompt}
+                  value={promptSettings.dialog_analysis_prompt || ''}
                   onChange={(e) => setPromptSettings({ ...promptSettings, dialog_analysis_prompt: e.target.value })}
-                  placeholder={`Use this to override the default dialog analysis prompt for this chat...\nDefault: ${promptSettings.default_dialog_analysis_prompt || 'Loading...'}`}
-                  rows={5}
+                  placeholder="Введите общий промт для анализа диалогов..."
+                  rows={4}
                 />
               </div>
 
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>NeiroWork Prompt:</label>
-                <S.ModalTextarea
-                  value={promptSettings.neirowork_prompt}
-                  onChange={(e) => setPromptSettings({ ...promptSettings, neirowork_prompt: e.target.value })}
-                  placeholder={`Use this to override the default NeiroWork prompt for this chat...\nDefault: ${promptSettings.default_neirowork_prompt || 'Loading...'}`}
-                  rows={5}
+              {/* Checkbox */}
+              <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <input
+                  type="checkbox"
+                  id="useCustomPrompt"
+                  checked={useCustomPrompt}
+                  onChange={(e) => setUseCustomPrompt(e.target.checked)}
+                  style={{ width: '18px', height: '18px' }}
                 />
+                <label htmlFor="useCustomPrompt" style={{ fontSize: '14px', color: '#495057', cursor: 'pointer' }}>
+                  Использовать индивидуальный промт для этого чата
+                </label>
               </div>
 
-              <S.ModalButtons>
-                <S.CancelButton onClick={() => setShowAdvancedPromptSettings(false)}>
-                  Cancel
-                </S.CancelButton>
-                <S.ConfirmButton onClick={updatePromptSettings}>
-                  Save Settings
-                </S.ConfirmButton>
-              </S.ModalButtons>
-            </S.ModalContent>
-          </S.CreateChatModal>
-        )
-      }
+              {/* Individual Prompt */}
+              {useCustomPrompt && (
+                <div style={{ marginBottom: '20px' }}>
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#667eea' }}>
+                    Индивидуальный промт (для этого чата):
+                  </label>
+                  <S.ModalTextarea
+                    value={customPrompt}
+                    onChange={(e) => setCustomPrompt(e.target.value)}
+                    placeholder="Введите индивидуальный промт для этого чата..."
+                    rows={4}
+                  />
+                </div>
+              )}
 
-      {/* Custom Prompt Settings Modal */}
-      {
-        showCustomPromptSettings && (
-          <S.CreateChatModal onClick={() => setShowCustomPromptSettings(false)}>
-            <S.ModalContent onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: '600px' }}>
-              <S.ModalTitle>Chat Settings - Custom Prompt</S.ModalTitle>
-              <S.ModalTextarea
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder="Enter your custom prompt here...\nThis will be added to the default analysis prompt when analyzing this chat.\nFor example: 'Focus on technical aspects' or 'Summarize in bullet points'"
-                rows={6}
-              />
               <S.ModalButtons>
                 <S.CancelButton onClick={() => setShowCustomPromptSettings(false)}>
-                  Cancel
+                  Отмена
                 </S.CancelButton>
-                <S.ConfirmButton onClick={updateCustomPrompt}>
-                  Save Prompt
+                <S.ConfirmButton onClick={() => {
+                  updateCustomPrompt();
+                  // Update global prompt if not using individual prompt
+                  if (!useCustomPrompt && promptSettings.dialog_analysis_prompt) {
+                    // Update the global prompt in ai_prompts table
+                    axios.put('/api/prompts/dialog_analysis', {
+                      name: 'dialog_analysis',
+                      prompt_text: promptSettings.dialog_analysis_prompt
+                    }).catch(err => console.error('Error updating global prompt:', err));
+                  } else {
+                    // Update the chat-specific prompt in chat_prompts_settings table
+                    updatePromptSettings();
+                  }
+                }}>
+                  Сохранить
                 </S.ConfirmButton>
               </S.ModalButtons>
             </S.ModalContent>
@@ -777,47 +837,6 @@ function App() {
         )
       }
 
-      {/* Advanced Prompt Settings Modal */}
-      {
-        showAdvancedPromptSettings && (
-          <S.CreateChatModal onClick={() => setShowAdvancedPromptSettings(false)}>
-            <S.ModalContent onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: '700px' }}>
-              <S.ModalTitle>Advanced Prompt Settings</S.ModalTitle>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                  Dialog Analysis Prompt:
-                </label>
-                <S.ModalTextarea
-                  value={promptSettings.dialog_analysis_prompt}
-                  onChange={(e) => setPromptSettings({ ...promptSettings, dialog_analysis_prompt: e.target.value })}
-                  placeholder={`Use this to override the default dialog analysis prompt for this chat...\nDefault: ${promptSettings.default_dialog_analysis_prompt || 'Loading...'}`}
-                  rows={5}
-                />
-              </div>
-
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>NeiroWork Prompt:</label>
-                <S.ModalTextarea
-                  value={promptSettings.neirowork_prompt}
-                  onChange={(e) => setPromptSettings({ ...promptSettings, neirowork_prompt: e.target.value })}
-                  placeholder={`Use this to override the default NeiroWork prompt for this chat...\nDefault: ${promptSettings.default_neirowork_prompt || 'Loading...'}`}
-                  rows={5}
-                />
-              </div>
-
-              <S.ModalButtons>
-                <S.CancelButton onClick={() => setShowAdvancedPromptSettings(false)}>
-                  Cancel
-                </S.CancelButton>
-                <S.ConfirmButton onClick={updatePromptSettings}>
-                  Save Settings
-                </S.ConfirmButton>
-              </S.ModalButtons>
-            </S.ModalContent>
-          </S.CreateChatModal>
-        )
-      }
 
       {/* NeiroWork Window */}
       {
@@ -835,7 +854,12 @@ function App() {
               }}
               onClick={(e) => e.stopPropagation()}
             >
-              <S.NeiroWorkWindowTitle>NeiroWork Overview</S.NeiroWorkWindowTitle>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                <S.NeiroWorkWindowTitle>NeiroWork Overview</S.NeiroWorkWindowTitle>
+                <S.MoreButton className="neirowork-menu" onClick={() => setShowGlobalPromptSettings(true)}>
+                  ...
+                </S.MoreButton>
+              </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>Analysis of all chat dialogs</p>
                 <S.AnalyzeButton
@@ -911,8 +935,13 @@ function App() {
               </S.ModalButtons>
             </S.ModalContent>
           </S.CreateChatModal>
-        )
-      }
+        )}
+
+      {/* Global Prompt Settings Modal */}
+      {/* <GlobalPromptSettingsModal 
+        isOpen={showGlobalPromptSettings} 
+        onClose={() => setShowGlobalPromptSettings(false)} 
+      /> */}
     </S.AppContainer>
   );
 }

@@ -59,9 +59,21 @@ const chatRoutes = async (app: FastifyInstance) => {
   });
 
   // Send message
-  app.post('/send', async (request: FastifyRequest<{ Body: any }>, reply: FastifyReply) => {
+  interface SendMessageBody {
+    chat_id: number;
+    content: string;
+    parent_id?: number;
+    images?: Array<{ url: string }>;
+  }
+
+  app.post('/send', async (request: FastifyRequest<{ Body: SendMessageBody }>, reply: FastifyReply) => {
     try {
       const { chat_id, content, parent_id, images } = request.body;
+
+      // Validate required fields
+      if (!chat_id || !content) {
+        return reply.status(400).send({ error: 'chat_id and content are required' });
+      }
 
       // Prepare message content
       let messageContent: string | Array<{ type: string, text?: string, image_url?: { url: string } }>;
@@ -297,7 +309,7 @@ const chatRoutes = async (app: FastifyInstance) => {
       // Add full URL to each image
       const images = result.rows.map(row => ({
         ...row,
-        url: `${request.protocol}://${request.hostname}:${request.port}${row.filepath}`
+        url: `${request.protocol}://${request.hostname}${request.port ? `:${request.port}` : ''}${row.filepath}`
       }));
 
       reply.send(images);
@@ -328,36 +340,17 @@ const chatRoutes = async (app: FastifyInstance) => {
 
       const existingAnalysis = analysisResult.rows[0].analysis_text;
 
-      // Get chat-specific NeiroWork prompt settings
-      const settingsResult = await pool.query(
-        'SELECT neirowork_prompt FROM chat_prompts_settings WHERE chat_id = $1',
-        [chatId]
-      );
-
-      // Get default NeiroWork prompt
+      // For NeiroWork, use only the global prompt from ai_prompts table
+      // DO NOT use chat-specific or chat-level custom prompts for NeiroWork
       const defaultPromptResult = await pool.query(
         'SELECT prompt_text FROM ai_prompts WHERE name = $1',
         ['neiro_work']
       );
 
-      // Get chat-level custom prompt
-      const chatCustomPromptResult = await pool.query(
-        'SELECT custom_prompt FROM chats WHERE id = $1',
-        [chatId]
-      );
-
       const defaultPrompt = defaultPromptResult.rows[0]?.prompt_text || 'You are NeiroWork AI Assistant. Based on the following dialog analysis, provide strategic insights, identify key themes, highlight important decisions made, and suggest actionable next steps for the team. Focus on extracting business value from the conversation.';
-      const chatSpecificPrompt = settingsResult.rows[0]?.neirowork_prompt || '';
-      const chatLevelCustomPrompt = chatCustomPromptResult.rows[0]?.custom_prompt || '';
 
-      // Combine prompts in order of priority: default -> chat-specific -> chat-level custom
-      let prompt = defaultPrompt;
-      if (chatSpecificPrompt) {
-        prompt = chatSpecificPrompt;
-      }
-      if (chatLevelCustomPrompt) {
-        prompt += `\n\nAdditional instructions: ${chatLevelCustomPrompt}`;
-      }
+      // Use only the global prompt for NeiroWork
+      const prompt = defaultPrompt;
 
       // Combine prompt with existing analysis
       const fullPrompt = `${prompt}\n\nDialog Analysis: ${existingAnalysis}`;

@@ -88,17 +88,24 @@ const createTables = async () => {
       )
     `);
 
+    // Create chat_prompts_settings table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS chat_prompts_settings (
+        id SERIAL PRIMARY KEY,
+        chat_id INTEGER REFERENCES chats(id) ON DELETE CASCADE,
+        dialog_analysis_prompt TEXT DEFAULT '',
+        neirowork_prompt TEXT DEFAULT '',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Insert default prompts if they don't exist
     await pool.query(`
       INSERT INTO ai_prompts (name, prompt_text, version) 
       VALUES 
-        ('dialog_analysis', 'Проанализируй этот диалог. Выпиши основные темы, проблемы, договорённости, важные факты. Ответ давать кратко, структурированно.', 1)
-      ON CONFLICT (name) DO NOTHING
-    `);
-
-    await pool.query(`
-      INSERT INTO ai_prompts (name, prompt_text, version) 
-      VALUES 
+        ('dialog_analysis', 'Проанализируй этот диалог. Выпиши основные темы, проблемы, договорённости, важные факты. Ответ давать кратко, структурированно.', 1),
+        ('global_prompt', 'Глобальный промт по умолчанию. Этот промт используется как основа для всех операций в системе, если не указаны более специфичные настройки.', 1),
         ('neiro_work', 'Ты — менеджер по организации работы. На основе анализа диалога составь: 1. Главные выводы 2. Проблемы, на которые стоит обратить внимание 3. Чек-лист задач (to-do) 4. Рекомендации по дальнейшим действиям Ответ давать по пунктам, чётко, без воды.', 1)
       ON CONFLICT (name) DO NOTHING
     `);

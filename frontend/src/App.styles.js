@@ -17,10 +17,55 @@ export const Sidebar = styled.div`
 `;
 
 export const SidebarHeader = styled.div`
-  padding: 20px;
-  border-bottom: 1px solid #e0e0e0;
+  padding: 10px;
+  border-bottom: 1px solid #e9ecef;
 `;
 
+export const SidebarTopRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+export const MoreButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 8px;
+  color: #495057;
+  border-radius: 4px;
+
+  &:hover {
+    background: #e9ecef;
+  }
+`;
+
+export const DropdownMenu = styled.div`
+  position: absolute;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  min-width: 180px;
+  overflow: hidden;
+`;
+
+export const DropdownItem = styled.button`
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  color: #343a40;
+
+  &:hover {
+    background: #f8f9fa;
+  }
+`;
 
 export const NewChatButton = styled.button`
   width: 100%;
