@@ -444,8 +444,7 @@ function App() {
             {showSidebarMenu && (
               <S.DropdownMenu className="sidebar-menu">
                 <S.DropdownItem onClick={() => {
-
-                  setShowAdvancedPromptSettings(true);
+                  setShowGlobalPromptSettings(true);
                   setShowSidebarMenu(false);
                 }}>
                   Neiro Work Prompt Settings
@@ -521,57 +520,6 @@ function App() {
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysis}</ReactMarkdown>
                   </S.AnalysisContent>
                 </S.AnalysisContainer>
-              )}
-
-              {/* NeiroWork Display */}
-              {showNeiroWork && neiroWork && (
-                <S.NeiroWorkContainer>
-                  <S.NeiroWorkHeader>
-                    <S.NeiroWorkContainerTitle>NeiroWork Assistant</S.NeiroWorkContainerTitle>
-                    <S.CloseButton onClick={() => setShowNeiroWork(false)}>×</S.CloseButton>
-                  </S.NeiroWorkHeader>
-                  <S.NeiroWorkContainerContent>
-                    {neiroWork.summary && (
-                      <S.Section>
-                        <S.SectionTitle>Summary</S.SectionTitle>
-                        <S.SectionContent>{neiroWork.summary}</S.SectionContent>
-                      </S.Section>
-                    )}
-
-                    {neiroWork.problems && neiroWork.problems.length > 0 && (
-                      <S.Section>
-                        <S.SectionTitle>Problems</S.SectionTitle>
-                        <S.List>
-                          {neiroWork.problems.map((problem, index) => (
-                            <S.ListItem key={index}>• {problem}</S.ListItem>
-                          ))}
-                        </S.List>
-                      </S.Section>
-                    )}
-
-                    {neiroWork.todo && neiroWork.todo.length > 0 && (
-                      <S.Section>
-                        <S.SectionTitle>To-Do List</S.SectionTitle>
-                        <S.List>
-                          {neiroWork.todo.map((task, index) => (
-                            <S.ListItem key={index}>□ {task}</S.ListItem>
-                          ))}
-                        </S.List>
-                      </S.Section>
-                    )}
-
-                    {neiroWork.recommendations && neiroWork.recommendations.length > 0 && (
-                      <S.Section>
-                        <S.SectionTitle>Recommendations</S.SectionTitle>
-                        <S.List>
-                          {neiroWork.recommendations.map((rec, index) => (
-                            <S.ListItem key={index}>→ {rec}</S.ListItem>
-                          ))}
-                        </S.List>
-                      </S.Section>
-                    )}
-                  </S.NeiroWorkContainerContent>
-                </S.NeiroWorkContainer>
               )}
 
               {/* Messages */}
@@ -857,18 +805,13 @@ function App() {
                             View Chat
                           </S.AnalyzeButton>
                         </div>
-                        <div style={{
-                          margin: '10px 0',
-                          fontSize: '14px',
-                          lineHeight: '1.4',
-                          color: '#555'
-                        }}>
+                        <S.AnalysisContent>
                           {item.analysis ? (
                             <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.analysis}</ReactMarkdown>
                           ) : (
                             'No analysis available. Click "Analyze Dialog" in the chat to generate.'
                           )}
-                        </div>
+                        </S.AnalysisContent>
                         <div style={{
                           fontSize: '12px',
                           color: '#999',
@@ -897,10 +840,10 @@ function App() {
         )}
 
       {/* Global Prompt Settings Modal */}
-      {/* <GlobalPromptSettingsModal 
-        isOpen={showGlobalPromptSettings} 
-        onClose={() => setShowGlobalPromptSettings(false)} 
-      /> */}
+      <NeiroWorkPromptSettingsModal
+        isOpen={showGlobalPromptSettings}
+        onClose={() => setShowGlobalPromptSettings(false)}
+      />
     </S.AppContainer>
   );
 }

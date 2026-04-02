@@ -90,7 +90,7 @@ const SaveButton = styled.button`
 
 function NeiroWorkPromptSettingsModal({ isOpen, onClose }) {
   const { globalPrompts, fetchGlobalPrompts, updateGlobalPrompt } = useChatContext();
-  const [localPrompt, setLocalPrompt] = React.useState(globalPrompts.global_prompt || '');
+  const [localPrompt, setLocalPrompt] = React.useState(globalPrompts.system_settings || '');
 
   React.useEffect(() => {
     if (isOpen) {
@@ -100,7 +100,7 @@ function NeiroWorkPromptSettingsModal({ isOpen, onClose }) {
 
   React.useEffect(() => {
     if (isOpen) {
-      setLocalPrompt(globalPrompts.global_prompt || '');
+      setLocalPrompt(globalPrompts.system_settings || '');
     }
   }, [isOpen, globalPrompts]);
 
@@ -109,7 +109,7 @@ function NeiroWorkPromptSettingsModal({ isOpen, onClose }) {
   const handleSave = async () => {
     try {
       // Update NeiroWork global prompt
-      await updateGlobalPrompt('global_prompt', localPrompt);
+      await updateGlobalPrompt('neiro_work', localPrompt);
       onClose();
     } catch (error) {
       console.error('Error saving NeiroWork prompt:', error);
