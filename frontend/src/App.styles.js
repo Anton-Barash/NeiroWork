@@ -406,6 +406,33 @@ export const AnalysisContent = styled.div`
     color: #666;
     font-style: italic;
   }
+  
+  /* Table styles */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+  }
+  
+  th, td {
+    border: 1px solid #e0e0e0;
+    padding: 8px 12px;
+    text-align: left;
+  }
+  
+  th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+  }
+  
+  tr:nth-child(even) {
+    background-color: #f8f9fa;
+  }
+  
+  tr:hover {
+    background-color: #e9ecef;
+  }
 `;
 
 export const NeiroWorkContainer = styled.div`
@@ -698,7 +725,10 @@ export const CreateChatModal = styled.div`
 `;
 
 export const ModalContent = styled.div`
-  // background-color: #ffffff00;
+// добавим полупрозрачный фон с эффектом тени阴影 и размытия
+  background-color: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(3px);
+
   padding: 30px;
   border-radius: 8px;
   width: 90%;

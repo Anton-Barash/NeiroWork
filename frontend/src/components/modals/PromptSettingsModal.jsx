@@ -66,8 +66,8 @@ const PromptSettingsModal = ({
             updateCustomPrompt();
             if (!useCustomPrompt && promptSettings.dialog_analysis_prompt) {
               // Update the global prompt in ai_prompts table
-              axios.put('/api/prompts/dialog_analysis', {
-                name: 'dialog_analysis',
+              axios.put('/api/prompts/global_prompt', {
+                name: 'global_prompt',
                 prompt_text: promptSettings.dialog_analysis_prompt
               }).catch(err => console.error('Error updating global prompt:', err));
             } else {

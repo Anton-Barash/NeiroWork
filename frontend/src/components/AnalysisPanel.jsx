@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from '@emotion/styled';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useChatContext } from '../context/ChatContext';
 
 const AnalysisContainer = styled.div`
@@ -89,7 +90,7 @@ function AnalysisPanel() {
         <CloseButton onClick={() => setShowAnalysis(false)}>×</CloseButton>
       </AnalysisHeader>
       <AnalysisContent>
-        <ReactMarkdown>{analysis}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysis}</ReactMarkdown>
       </AnalysisContent>
     </AnalysisContainer>
   );

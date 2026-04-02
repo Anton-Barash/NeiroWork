@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import * as S from './App.styles';
 import PromptSettingsModal from './components/modals/PromptSettingsModal';
 import NeiroWorkPromptSettingsModal from './components/modals/NeiroWorkPromptSettingsModal';
@@ -38,11 +39,11 @@ function App() {
       try {
         const response = await axios.get('/api/prompts');
         // Ожидается, что response.data — массив объектов с name и prompt_text
-        const dialogPromptObj = response.data.find(p => p.name === 'dialog_analysis');
-        const neiroworkPromptObj = response.data.find(p => p.name === 'neirowork_prompt');
+        const globalPromptObj = response.data.find(p => p.name === 'global_prompt');
+        const neiroworkPromptObj = response.data.find(p => p.name === 'neiro_work');
         setPromptSettings(prev => ({
           ...prev,
-          dialog_analysis_prompt: dialogPromptObj ? dialogPromptObj.prompt_text : prev.dialog_analysis_prompt,
+          dialog_analysis_prompt: globalPromptObj ? globalPromptObj.prompt_text : prev.dialog_analysis_prompt,
           neirowork_prompt: neiroworkPromptObj ? neiroworkPromptObj.prompt_text : prev.neirowork_prompt
         }));
       } catch (error) {
@@ -60,86 +61,6 @@ function App() {
   const messagesEndRef = useRef(null);
 
 
-  const CreateChatModal = ({
-    isOpen,
-    onClose,
-    promptSettings,
-    setPromptSettings,
-    useCustomPrompt,
-    setUseCustomPrompt,
-    customPrompt,
-    setCustomPrompt,
-    updateCustomPrompt,
-    updatePromptSettings
-  }) => {
-    if (!isOpen) return null;
-    return (
-      <S.CreateChatModal onClick={onClose}>
-        <S.ModalContent onClick={e => e.stopPropagation()} style={{ width: '90%', maxWidth: '700px' }}>
-          <S.ModalTitle>Настройки промпта анализа</S.ModalTitle>
-          {/* Global Prompt */}
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#343a40' }}>
-              Общий промт (для всех чатов):
-            </label>
-            <S.ModalTextarea
-              value={promptSettings.dialog_analysis_prompt || ''}
-              onChange={e => setPromptSettings({ ...promptSettings, dialog_analysis_prompt: e.target.value })}
-              placeholder="Введите общий промт для анализа диалогов..."
-              rows={4}
-            />
-          </div>
-          {/* Checkbox */}
-          <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <input
-              type="checkbox"
-              id="useCustomPrompt"
-              checked={useCustomPrompt}
-              onChange={e => setUseCustomPrompt(e.target.checked)}
-              style={{ width: '18px', height: '18px' }}
-            />
-            <label htmlFor="useCustomPrompt" style={{ fontSize: '14px', color: '#495057', cursor: 'pointer' }}>
-              Использовать индивидуальный промт для этого чата
-            </label>
-          </div>
-          {/* Individual Prompt */}
-          {useCustomPrompt && (
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#667eea' }}>
-                Индивидуальный промт (для этого чата):
-              </label>
-              <S.ModalTextarea
-                value={customPrompt}
-                onChange={e => setCustomPrompt(e.target.value)}
-                placeholder="Введите индивидуальный промт для этого чата..."
-                rows={4}
-              />
-            </div>
-          )}
-          <S.ModalButtons>
-            <S.CancelButton onClick={onClose}>
-              Отмена
-            </S.CancelButton>
-            <S.ConfirmButton onClick={() => {
-              updateCustomPrompt();
-              if (!useCustomPrompt && promptSettings.dialog_analysis_prompt) {
-                // Update the global prompt in ai_prompts table
-                axios.put('/api/prompts/dialog_analysis', {
-                  name: 'dialog_analysis',
-                  prompt_text: promptSettings.dialog_analysis_prompt
-                }).catch(err => console.error('Error updating global prompt:', err));
-              } else {
-                // Update the chat-specific prompt in chat_prompts_settings table
-                updatePromptSettings();
-              }
-            }}>
-              Сохранить
-            </S.ConfirmButton>
-          </S.ModalButtons>
-        </S.ModalContent>
-      </S.CreateChatModal>
-    );
-  };
 
   // Fetch chats on component mount
   useEffect(() => {
@@ -597,7 +518,7 @@ function App() {
                     <S.CloseButton onClick={() => setShowAnalysis(false)}>×</S.CloseButton>
                   </S.AnalysisHeader>
                   <S.AnalysisContent>
-                    <ReactMarkdown>{analysis}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysis}</ReactMarkdown>
                   </S.AnalysisContent>
                 </S.AnalysisContainer>
               )}
@@ -943,7 +864,7 @@ function App() {
                           color: '#555'
                         }}>
                           {item.analysis ? (
-                            <ReactMarkdown>{item.analysis}</ReactMarkdown>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.analysis}</ReactMarkdown>
                           ) : (
                             'No analysis available. Click "Analyze Dialog" in the chat to generate.'
                           )}
