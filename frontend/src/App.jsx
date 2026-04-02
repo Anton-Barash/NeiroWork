@@ -31,6 +31,26 @@ function App() {
     dialog_analysis_prompt: '',
     neirowork_prompt: ''
   });
+
+  // Загружаем глобальный промт один раз при инициализации
+  useEffect(() => {
+    const fetchGlobalPromptOnce = async () => {
+      try {
+        const response = await axios.get('/api/prompts');
+        // Ожидается, что response.data — массив объектов с name и prompt_text
+        const dialogPromptObj = response.data.find(p => p.name === 'dialog_analysis');
+        const neiroworkPromptObj = response.data.find(p => p.name === 'neirowork_prompt');
+        setPromptSettings(prev => ({
+          ...prev,
+          dialog_analysis_prompt: dialogPromptObj ? dialogPromptObj.prompt_text : prev.dialog_analysis_prompt,
+          neirowork_prompt: neiroworkPromptObj ? neiroworkPromptObj.prompt_text : prev.neirowork_prompt
+        }));
+      } catch (error) {
+        console.error('Error fetching global prompt:', error);
+      }
+    };
+    fetchGlobalPromptOnce();
+  }, []);
   const [showAdvancedPromptSettings, setShowAdvancedPromptSettings] = useState(false);
   const [showGlobalPromptSettings, setShowGlobalPromptSettings] = useState(false);
   const [useCustomPrompt, setUseCustomPrompt] = useState(false);
