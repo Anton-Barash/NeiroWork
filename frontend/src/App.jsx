@@ -3,7 +3,6 @@ import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 import * as S from './App.styles';
 import PromptSettingsModal from './components/modals/PromptSettingsModal';
-import GlobalPromptSettingsModal from './components/modals/GlobalPromptSettingsModal';
 import NeiroWorkPromptSettingsModal from './components/modals/NeiroWorkPromptSettingsModal';
 
 function App() {
@@ -39,6 +38,88 @@ function App() {
   const [showChatMenu, setShowChatMenu] = useState(false);
   const [showNeiroWorkMenu, setShowNeiroWorkMenu] = useState(false);
   const messagesEndRef = useRef(null);
+
+
+  const CreateChatModal = ({
+    isOpen,
+    onClose,
+    promptSettings,
+    setPromptSettings,
+    useCustomPrompt,
+    setUseCustomPrompt,
+    customPrompt,
+    setCustomPrompt,
+    updateCustomPrompt,
+    updatePromptSettings
+  }) => {
+    if (!isOpen) return null;
+    return (
+      <S.CreateChatModal onClick={onClose}>
+        <S.ModalContent onClick={e => e.stopPropagation()} style={{ width: '90%', maxWidth: '700px' }}>
+          <S.ModalTitle>Настройки промпта анализа</S.ModalTitle>
+          {/* Global Prompt */}
+          <div style={{ marginBottom: '20px' }}>
+            <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#343a40' }}>
+              Общий промт (для всех чатов):
+            </label>
+            <S.ModalTextarea
+              value={promptSettings.dialog_analysis_prompt || ''}
+              onChange={e => setPromptSettings({ ...promptSettings, dialog_analysis_prompt: e.target.value })}
+              placeholder="Введите общий промт для анализа диалогов..."
+              rows={4}
+            />
+          </div>
+          {/* Checkbox */}
+          <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <input
+              type="checkbox"
+              id="useCustomPrompt"
+              checked={useCustomPrompt}
+              onChange={e => setUseCustomPrompt(e.target.checked)}
+              style={{ width: '18px', height: '18px' }}
+            />
+            <label htmlFor="useCustomPrompt" style={{ fontSize: '14px', color: '#495057', cursor: 'pointer' }}>
+              Использовать индивидуальный промт для этого чата
+            </label>
+          </div>
+          {/* Individual Prompt */}
+          {useCustomPrompt && (
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#667eea' }}>
+                Индивидуальный промт (для этого чата):
+              </label>
+              <S.ModalTextarea
+                value={customPrompt}
+                onChange={e => setCustomPrompt(e.target.value)}
+                placeholder="Введите индивидуальный промт для этого чата..."
+                rows={4}
+              />
+            </div>
+          )}
+          <S.ModalButtons>
+            <S.CancelButton onClick={onClose}>
+              Отмена
+            </S.CancelButton>
+            <S.ConfirmButton onClick={() => {
+              updateCustomPrompt();
+              if (!useCustomPrompt && promptSettings.dialog_analysis_prompt) {
+                // Update the global prompt in ai_prompts table
+                axios.put('/api/prompts/dialog_analysis', {
+                  name: 'dialog_analysis',
+                  prompt_text: promptSettings.dialog_analysis_prompt
+                }).catch(err => console.error('Error updating global prompt:', err));
+              } else {
+                // Update the chat-specific prompt in chat_prompts_settings table
+                updatePromptSettings();
+              }
+            }}>
+              Сохранить
+            </S.ConfirmButton>
+          </S.ModalButtons>
+        </S.ModalContent>
+      </S.CreateChatModal>
+    );
+  };
 
   // Fetch chats on component mount
   useEffect(() => {
@@ -125,8 +206,6 @@ function App() {
       console.error('Error fetching files:', error);
     }
   };
-
-
 
   const fetchImages = async () => {
     if (!currentChat) return;
@@ -394,8 +473,6 @@ function App() {
       setAnalysisLoading(false);
     }
   };
-
-
 
   const formatTime = (timestamp) => {
     const date = new Date(timestamp);
@@ -763,79 +840,20 @@ function App() {
       }
 
       {/* Prompt Settings Modal - Combined */}
-      {
-        showCustomPromptSettings && (
-          <S.CreateChatModal onClick={() => setShowCustomPromptSettings(false)}>
-            <S.ModalContent onClick={(e) => e.stopPropagation()} style={{ width: '90%', maxWidth: '700px' }}>
-              <S.ModalTitle>Настройки промпта анализа</S.ModalTitle>
 
-              {/* Global Prompt */}
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#343a40' }}>
-                  Общий промт (для всех чатов):
-                </label>
-                <S.ModalTextarea
-                  value={promptSettings.dialog_analysis_prompt || ''}
-                  onChange={(e) => setPromptSettings({ ...promptSettings, dialog_analysis_prompt: e.target.value })}
-                  placeholder="Введите общий промт для анализа диалогов..."
-                  rows={4}
-                />
-              </div>
+      <PromptSettingsModal
+        isOpen={showCustomPromptSettings}
+        onClose={() => setShowCustomPromptSettings(false)}
+        promptSettings={promptSettings}
+        setPromptSettings={setPromptSettings}
+        useCustomPrompt={useCustomPrompt}
+        setUseCustomPrompt={setUseCustomPrompt}
+        customPrompt={customPrompt}
+        setCustomPrompt={setCustomPrompt}
+        updateCustomPrompt={updateCustomPrompt}
+        updatePromptSettings={updatePromptSettings}
+      />
 
-              {/* Checkbox */}
-              <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <input
-                  type="checkbox"
-                  id="useCustomPrompt"
-                  checked={useCustomPrompt}
-                  onChange={(e) => setUseCustomPrompt(e.target.checked)}
-                  style={{ width: '18px', height: '18px' }}
-                />
-                <label htmlFor="useCustomPrompt" style={{ fontSize: '14px', color: '#495057', cursor: 'pointer' }}>
-                  Использовать индивидуальный промт для этого чата
-                </label>
-              </div>
-
-              {/* Individual Prompt */}
-              {useCustomPrompt && (
-                <div style={{ marginBottom: '20px' }}>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold', color: '#667eea' }}>
-                    Индивидуальный промт (для этого чата):
-                  </label>
-                  <S.ModalTextarea
-                    value={customPrompt}
-                    onChange={(e) => setCustomPrompt(e.target.value)}
-                    placeholder="Введите индивидуальный промт для этого чата..."
-                    rows={4}
-                  />
-                </div>
-              )}
-
-              <S.ModalButtons>
-                <S.CancelButton onClick={() => setShowCustomPromptSettings(false)}>
-                  Отмена
-                </S.CancelButton>
-                <S.ConfirmButton onClick={() => {
-                  updateCustomPrompt();
-                  // Update global prompt if not using individual prompt
-                  if (!useCustomPrompt && promptSettings.dialog_analysis_prompt) {
-                    // Update the global prompt in ai_prompts table
-                    axios.put('/api/prompts/dialog_analysis', {
-                      name: 'dialog_analysis',
-                      prompt_text: promptSettings.dialog_analysis_prompt
-                    }).catch(err => console.error('Error updating global prompt:', err));
-                  } else {
-                    // Update the chat-specific prompt in chat_prompts_settings table
-                    updatePromptSettings();
-                  }
-                }}>
-                  Сохранить
-                </S.ConfirmButton>
-              </S.ModalButtons>
-            </S.ModalContent>
-          </S.CreateChatModal>
-        )
-      }
 
 
       {/* NeiroWork Window */}
