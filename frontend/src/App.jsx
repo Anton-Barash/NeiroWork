@@ -9,11 +9,18 @@ import LoginModal from './components/modals/LoginModal';
 import CompanySelectorModal from './components/modals/CompanySelectorModal';
 import CreateCompanyModal from './components/modals/CreateCompanyModal';
 import JoinCompanyModal from './components/modals/JoinCompanyModal';
+import CreateChatModal from './components/modals/CreateChatModal';
 import { useAuth } from './context/AuthContext';
-import MessageReactions from './components/MessageReactions';
-import MessageEditor from './components/MessageEditor.jsx';
-import TypingIndicator from './components/TypingIndicator';
-import UserMenu from './components/UserMenu.jsx';
+import Sidebar from './components/Sidebar';
+import ChatHeader from './components/ChatHeader';
+import MessagesList from './components/MessagesList';
+import FilesList from './components/FilesList';
+import InputArea from './components/InputArea';
+import NeiroWorkWindow from './components/NeiroWorkWindow';
+import { chatService } from './services/chatService';
+import { fileService } from './services/fileService';
+import { companyService } from './services/companyService';
+import { promptService } from './services/promptService';
 
 function App() {
   const { user, isAuthenticated, loading: authLoading, logout, company, setCompany } = useAuth();
@@ -59,10 +66,10 @@ function App() {
   useEffect(() => {
     const fetchGlobalPromptOnce = async () => {
       try {
-        const response = await axios.get('/api/prompts');
-        // Ожидается, что response.data — массив объектов с name и prompt_text
-        const globalPromptObj = response.data.find(p => p.name === 'global_prompt');
-        const neiroworkPromptObj = response.data.find(p => p.name === 'neiro_work');
+        const prompts = await promptService.getGlobalPrompts();
+        // Ожидается, что prompts — массив объектов с name и prompt_text
+        const globalPromptObj = prompts.find(p => p.name === 'global_prompt');
+        const neiroworkPromptObj = prompts.find(p => p.name === 'neiro_work');
         setPromptSettings(prev => ({
           ...prev,
           dialog_analysis_prompt: globalPromptObj ? globalPromptObj.prompt_text : prev.dialog_analysis_prompt,
@@ -91,10 +98,10 @@ function App() {
     }
   }, [authLoading, isAuthenticated]);
 
-  // Fetch chats on component mount
+  // Fetch chats when company changes
   useEffect(() => {
     fetchChats();
-  }, []);
+  }, [company]);
 
   // Fetch messages when current chat changes
   useEffect(() => {
@@ -150,8 +157,8 @@ function App() {
 
   const fetchChats = async () => {
     try {
-      const response = await axios.get('/api/chat/list');
-      setChats(response.data);
+      const chats = await chatService.getChats(company?.id);
+      setChats(chats);
     } catch (error) {
       console.error('Error fetching chats:', error);
     }
@@ -160,9 +167,8 @@ function App() {
   const fetchMessages = async () => {
     if (!currentChat) return;
     try {
-      const response = await axios.get(`/api/chat/${currentChat.id}/chat-messages`);
-      console.log('Messages response:', response.data);
-      setMessages(response.data);
+      const messages = await chatService.getMessages(currentChat.id);
+      setMessages(messages);
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
@@ -171,8 +177,8 @@ function App() {
   const fetchFiles = async () => {
     if (!currentChat) return;
     try {
-      const response = await axios.get(`/api/files/${currentChat.id}`);
-      setFiles(response.data);
+      const files = await fileService.getFiles(currentChat.id);
+      setFiles(files);
     } catch (error) {
       console.error('Error fetching files:', error);
     }
@@ -191,9 +197,9 @@ function App() {
   const fetchAnalysis = async () => {
     if (!currentChat) return;
     try {
-      const response = await axios.get(`/api/chat/${currentChat.id}/analysis`);
-      if (response.data.analysis_text) {
-        setAnalysis(response.data.analysis_text);
+      const analysis = await chatService.getAnalysis(currentChat.id);
+      if (analysis.analysis_text) {
+        setAnalysis(analysis.analysis_text);
       }
     } catch (error) {
       console.error('Error fetching analysis:', error);
@@ -203,8 +209,8 @@ function App() {
   const fetchCustomPrompt = async () => {
     if (!currentChat) return;
     try {
-      const response = await axios.get(`/api/chat/${currentChat.id}/custom-prompt`);
-      setCustomPrompt(response.data.custom_prompt || '');
+      const prompt = await chatService.getCustomPrompt(currentChat.id);
+      setCustomPrompt(prompt.custom_prompt || '');
     } catch (error) {
       console.error('Error fetching custom prompt:', error);
     }
@@ -213,9 +219,7 @@ function App() {
   const updateCustomPrompt = async () => {
     if (!currentChat) return;
     try {
-      await axios.put(`/api/chat/${currentChat.id}/custom-prompt`, {
-        custom_prompt: customPrompt
-      });
+      await chatService.updateCustomPrompt(currentChat.id, customPrompt);
       setShowCustomPromptSettings(false);
     } catch (error) {
       console.error('Error updating custom prompt:', error);
@@ -225,8 +229,8 @@ function App() {
   const fetchPromptSettings = async () => {
     if (!currentChat) return;
     try {
-      const response = await axios.get(`/api/chat/${currentChat.id}/prompt-settings`);
-      setPromptSettings(response.data);
+      const settings = await chatService.getPromptSettings(currentChat.id);
+      setPromptSettings(settings);
     } catch (error) {
       console.error('Error fetching prompt settings:', error);
     }
@@ -244,10 +248,7 @@ function App() {
   const updatePromptSettings = async () => {
     if (!currentChat) return;
     try {
-      await axios.put(`/api/chat/${currentChat.id}/prompt-settings`, {
-        dialog_analysis_prompt: promptSettings.dialog_analysis_prompt,
-        neirowork_prompt: promptSettings.neirowork_prompt
-      });
+      await chatService.updatePromptSettings(currentChat.id, promptSettings);
       setShowCustomPromptSettings(false);
     } catch (error) {
       console.error('Error updating prompt settings:', error);
@@ -257,35 +258,7 @@ function App() {
   const fetchAllAnalyses = async () => {
     setAnalysesLoading(true);
     try {
-      // First get all chats
-      const chatsResponse = await axios.get('/api/chat/list');
-      const chats = chatsResponse.data;
-
-      // For each chat, get its analysis
-      const analysesPromises = chats.map(async (chat) => {
-        try {
-          const analysisResponse = await axios.get(`/api/chat/${chat.id}/analysis`);
-          // Use analysis_text if it exists, otherwise use analysis, and fallback to null
-          const analysisText = analysisResponse.data.analysis_text !== undefined ?
-            analysisResponse.data.analysis_text :
-            analysisResponse.data.analysis;
-
-          return {
-            chat,
-            analysis: analysisText,
-            hasNewMessages: analysisResponse.data.has_new_messages
-          };
-        } catch (error) {
-          console.error(`Error fetching analysis for chat ${chat.id}:`, error);
-          return {
-            chat,
-            analysis: null,
-            hasNewMessages: true
-          };
-        }
-      });
-
-      const analyses = await Promise.all(analysesPromises);
+      const analyses = await chatService.getAllAnalyses();
       setAllAnalyses(analyses);
     } catch (error) {
       console.error('Error fetching all analyses:', error);
@@ -295,13 +268,11 @@ function App() {
   };
 
   const createChat = async () => {
-    if (!newChatTopic.trim()) return;
+    if (!newChatTopic.trim() || !company) return;
     try {
-      const response = await axios.post('/api/chat/create', {
-        topic: newChatTopic,
-      });
-      setChats([response.data, ...chats]);
-      setCurrentChat(response.data);
+      const newChat = await chatService.createChat(newChatTopic, company.id);
+      setChats([newChat, ...chats]);
+      setCurrentChat(newChat);
       setShowModal(false);
       setNewChatTopic('');
     } catch (error) {
@@ -314,17 +285,11 @@ function App() {
 
     setIsLoading(true);
     try {
-      console.log('Sending message, user:', user);
-      const response = await axios.post('/api/chat/send', {
-        chat_id: currentChat.id,
-        content: newMessage,
-        images: uploadedImages.map(img => ({ url: img.url })),
-        user_id: user?.id || null,
-      });
+      const response = await chatService.sendMessage(currentChat.id, newMessage, uploadedImages, user?.id);
 
       setMessages([
         ...messages,
-        response.data.userMessage,
+        response.userMessage,
       ]);
       setNewMessage('');
       setUploadedFiles([]);
@@ -344,7 +309,7 @@ function App() {
   const deleteChat = async () => {
     if (!currentChat) return;
     try {
-      await axios.delete(`/api/chat/${currentChat.id}`);
+      await chatService.deleteChat(currentChat.id);
       setChats(chats.filter((chat) => chat.id !== currentChat.id));
       setCurrentChat(null);
       setMessages([]);
@@ -360,19 +325,10 @@ function App() {
     if (!currentChat || !e.target.files) return;
 
     const file = e.target.files[0];
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
-      const response = await axios.post('/api/files/upload', formData, {
-        params: { chat_id: currentChat.id },
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      setFiles([response.data, ...files]);
-      setUploadedFiles([...uploadedFiles, response.data]);
+      const uploadedFile = await fileService.uploadFile(currentChat.id, file);
+      setFiles([uploadedFile, ...files]);
+      setUploadedFiles([...uploadedFiles, uploadedFile]);
     } catch (error) {
       console.error('Error uploading file:', error);
     }
@@ -380,7 +336,7 @@ function App() {
 
   const deleteFile = async (fileId) => {
     try {
-      await axios.delete(`/api/files/${fileId}`);
+      await fileService.deleteFile(fileId);
       setFiles(files.filter((file) => file.id !== fileId));
     } catch (error) {
       console.error('Error deleting file:', error);
@@ -396,20 +352,11 @@ function App() {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     try {
-      const response = await axios.post('/api/files/upload', formData, {
-        params: { chat_id: currentChat.id },
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
+      const uploadedFile = await fileService.uploadFile(currentChat.id, file);
       // Create image URL for preview
-      const imageUrl = `${window.location.origin}${response.data.filepath}`;
-      setUploadedImages([...uploadedImages, { id: response.data.id, url: imageUrl, filename: response.data.filename }]);
+      const imageUrl = `${window.location.origin}${uploadedFile.filepath}`;
+      setUploadedImages([...uploadedImages, { id: uploadedFile.id, url: imageUrl, filename: uploadedFile.filename }]);
     } catch (error) {
       console.error('Error uploading image:', error);
     }
@@ -424,13 +371,10 @@ function App() {
 
     setAnalysisLoading(true);
     try {
-      console.log('Starting chat analysis for chat ID:', currentChat.id);
-      const response = await axios.post(`/api/chat/${currentChat.id}/analyze`);
-      console.log('Analysis response:', response.data);
+      const response = await chatService.analyzeChat(currentChat.id);
 
-      if (response.data && response.data.analysis) {
-        console.log('Setting analysis:', response.data.analysis);
-        setAnalysis(response.data.analysis);
+      if (response && response.analysis) {
+        setAnalysis(response.analysis);
         setShowAnalysis(true);
 
         // Refresh all analyses to reflect the updated analysis
@@ -438,7 +382,7 @@ function App() {
           fetchAllAnalyses();
         }, 2000);
       } else {
-        console.error('Invalid analysis response:', response.data);
+        console.error('Invalid analysis response:', response);
       }
     } catch (error) {
       console.error('Error analyzing chat:', error);
@@ -461,62 +405,25 @@ function App() {
   return (
     <S.AppContainer>
       {/* Sidebar */}
-      <S.Sidebar>
-        <S.SidebarHeader>
-          <S.SidebarTopRow>
-            <S.AppTitleButton onClick={() => {
-              setShowNeiroWorkWindow(true);
-              fetchAllAnalyses();
-            }}>
-              NeiroWork
-            </S.AppTitleButton>
-            <S.MoreButton className="sidebar-menu" onClick={() => setShowSidebarMenu(!showSidebarMenu)}>
-              ...
-            </S.MoreButton>
-            {showSidebarMenu && (
-              <S.DropdownMenu className="sidebar-menu">
-                <S.DropdownItem onClick={() => {
-                  setShowGlobalPromptSettings(true);
-                  setShowSidebarMenu(false);
-                }}>
-                  Neiro Work Prompt Settings
-                </S.DropdownItem>
-              </S.DropdownMenu>
-            )}
-          </S.SidebarTopRow>
-          <S.NewChatButton onClick={() => setShowModal(true)}>
-            + New Chat
-          </S.NewChatButton>
-        </S.SidebarHeader>
-        <S.ChatList>
-          {
-            chats.map((chat) => (
-              <S.ChatItem
-                key={chat.id}
-                active={currentChat?.id === chat.id}
-                onClick={() => {
-                  setCurrentChat(chat);
-                  setShowAnalysis(false);
-                  setShowNeiroWork(false);
-                }}
-              >
-                <h3>{chat.topic}</h3>
-                <p>
-                  {messages.filter((m) => m.id === chat.id).length} messages
-                </p>
-                <small>{new Date(chat.created_at).toLocaleDateString()}</small>
-              </S.ChatItem>
-            ))
-          }
-        </S.ChatList>
-
-        {/* User Menu */}
-        <UserMenu
-          onSettingsClick={() => setShowCompanySelector(true)}
-          onCreateCompanyClick={() => setShowCreateCompany(true)}
-          onJoinCompanyClick={() => setShowJoinCompany(true)}
-        />
-      </S.Sidebar>
+      <Sidebar
+        chats={chats}
+        currentChat={currentChat}
+        company={company}
+        showModal={showModal}
+        setShowModal={setShowModal}
+        showCompanySelector={showCompanySelector}
+        setShowCompanySelector={setShowCompanySelector}
+        showSidebarMenu={showSidebarMenu}
+        setShowSidebarMenu={setShowSidebarMenu}
+        showGlobalPromptSettings={showGlobalPromptSettings}
+        setShowGlobalPromptSettings={setShowGlobalPromptSettings}
+        showNeiroWorkWindow={showNeiroWorkWindow}
+        setShowNeiroWorkWindow={setShowNeiroWorkWindow}
+        fetchAllAnalyses={fetchAllAnalyses}
+        setCurrentChat={setCurrentChat}
+        setShowAnalysis={setShowAnalysis}
+        setShowNeiroWork={setShowNeiroWork}
+      />
 
       {/* Main Content */}
       <S.MainContent>
@@ -524,29 +431,15 @@ function App() {
           currentChat ? (
             <>
               {/* Chat Header */}
-              <S.ChatHeader>
-                <S.ChatTitle>{currentChat.topic}</S.ChatTitle>
-                <div style={{ position: 'relative' }}>
-                  <S.HeaderButtonsContainer>
-                    <S.AnalyzeButton onClick={analyzeChat} disabled={analysisLoading}>
-                      {analysisLoading ? 'Analyzing...' : 'Analyze Dialog'}
-                    </S.AnalyzeButton>
-                    <S.MoreButton className="chat-menu" onClick={() => setShowChatMenu(!showChatMenu)}>
-                      ...
-                    </S.MoreButton>
-                  </S.HeaderButtonsContainer>
-                  {showChatMenu && (
-                    <S.DropdownMenu className="chat-menu" style={{ right: 0, left: 'auto' }}>
-                      <S.DropdownItem onClick={() => { setShowCustomPromptSettings(true); setShowChatMenu(false); }}>
-                        Настройки промпта чата
-                      </S.DropdownItem>
-                      <S.DropdownItem onClick={() => { deleteChat(); setShowChatMenu(false); }} style={{ color: '#dc3545' }}>
-                        Delete
-                      </S.DropdownItem>
-                    </S.DropdownMenu>
-                  )}
-                </div>
-              </S.ChatHeader>
+              <ChatHeader
+                currentChat={currentChat}
+                analysisLoading={analysisLoading}
+                analyzeChat={analyzeChat}
+                showChatMenu={showChatMenu}
+                setShowChatMenu={setShowChatMenu}
+                setShowCustomPromptSettings={setShowCustomPromptSettings}
+                deleteChat={deleteChat}
+              />
 
               {/* Analysis Display */}
               {showAnalysis && analysis && (
@@ -562,173 +455,32 @@ function App() {
               )}
 
               {/* Messages */}
-              <S.MessagesContainer>
-                {
-                  messages.map((message) => {
-                    let content;
-                    /*
-                  ❗ POTENTIAL ERROR: JSON.parse without type checking can cause crashes
-                     If message.content is not a string, JSON.parse will throw an error
-                     FIX: Check if message.content is a string before parsing
-                  */
-                    try {
-                      // Try to parse JSON content (for messages with images)
-                      const parsedContent = JSON.parse(message.content);
-                      if (Array.isArray(parsedContent)) {
-                        content = (
-                          <div>
-                            {parsedContent.map((item, index) => {
-                              if (item.type === 'text' && item.text) {
-                                return <p key={index}>{item.text}</p>;
-                              } else if (item.type === 'image_url' && item.image_url) {
-                                return (
-                                  <img
-                                    key={index}
-                                    src={item.image_url.url}
-                                    alt="Message image"
-                                    style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px' }}
-                                  />
-                                );
-                              }
-                              return null;
-                            })}
-                          </div>
-                        );
-                      } else {
-                        content = message.content;
-                      }
-                    } catch {
-                      // If not JSON, use as string
-                      content = message.content;
-                    }
-
-                    const senderName = message.role === 'user' ? (user?.username || 'User') : 'AI Assistant';
-                    const avatarInitial = senderName.charAt(0).toUpperCase();
-
-                    return (
-                      <S.MessageContainer key={message.id} role={message.role}>
-                        <S.Avatar role={message.role}>{avatarInitial}</S.Avatar>
-                        <S.MessageInfoColumn>
-                          <S.SenderName role={message.role}>{senderName}</S.SenderName>
-                          <S.MessageBubble role={message.role}>
-                            <S.MessageContent>{content}</S.MessageContent>
-                          </S.MessageBubble>
-                          <S.MessageTime role={message.role}>{formatTime(message.created_at)}</S.MessageTime>
-                        </S.MessageInfoColumn>
-                      </S.MessageContainer>
-                    );
-                  })
-                }
-                {
-                  isLoading && (
-                    <TypingIndicator visible={isLoading} />
-                  )
-                }
-                <div ref={messagesEndRef} />
-              </S.MessagesContainer>
+              <MessagesList
+                messages={messages}
+                user={user}
+                isLoading={isLoading}
+                formatTime={formatTime}
+              />
 
               {/* Files List */}
-              {
-                files.length > 0 && (
-                  <S.FilesListContainer>
-                    <S.FilesTitle>Files</S.FilesTitle>
-                    {
-                      files.map((file) => (
-                        <S.FileItem key={file.id}>
-                          <S.FileName>{file.filename}</S.FileName>
-                          <S.FileSize>
-                            {formatFileSize(file.size)}
-                          </S.FileSize>
-                          <S.RemoveFileButton
-                            onClick={() => deleteFile(file.id)}
-                          >
-                            ×
-                          </S.RemoveFileButton>
-                        </S.FileItem>
-                      ))}
-                  </S.FilesListContainer>
-                )}
+              <FilesList
+                files={files}
+                deleteFile={deleteFile}
+                formatFileSize={formatFileSize}
+              />
 
               {/* Input Area */}
-              <S.InputArea>
-                <S.FileUploadArea>
-                  {
-                    uploadedFiles.map((file) => (
-                      <S.FileItem key={file.id}>
-                        <S.FileName>{file.filename}</S.FileName>
-                        <S.FileSize>
-                          {formatFileSize(file.size)}
-                        </S.FileSize>
-                      </S.FileItem>
-                    ))}
-                  {
-                    uploadedImages.map((image) => (
-                      <div key={image.id} style={{ position: 'relative', display: 'inline-block', margin: '5px' }}>
-                        <img src={image.url} alt={image.filename} style={{ maxWidth: '100px', maxHeight: '100px', borderRadius: '4px' }} />
-                        <button
-                          onClick={() => removeImage(image.id)}
-                          style={{
-                            position: 'absolute',
-                            top: '-8px',
-                            right: '-8px',
-                            background: '#dc3545',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '50%',
-                            width: '20px',
-                            height: '20px',
-                            fontSize: '12px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                </S.FileUploadArea>
-                <S.InputContainer>
-                  <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-                    <label
-                      style={{
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '50%',
-                        border: '1px solid #e0e0e0',
-                        backgroundColor: '#f8f9fa'
-                      }}
-                    >
-                      📷
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        style={{ display: 'none' }}
-                      />
-                    </label>
-                    <S.MessageInput
-                      placeholder="Type your message..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) =>
-                        e.key === 'Enter' && !e.shiftKey && sendMessage()
-                      }
-                    />
-                    <S.SendButton
-                      onClick={sendMessage}
-                      disabled={(!newMessage.trim() && uploadedImages.length === 0) || isLoading}
-                    >
-                      Send
-                    </S.SendButton>
-                  </div>
-                </S.InputContainer>
-              </S.InputArea>
+              <InputArea
+                newMessage={newMessage}
+                setNewMessage={setNewMessage}
+                uploadedFiles={uploadedFiles}
+                uploadedImages={uploadedImages}
+                isLoading={isLoading}
+                sendMessage={sendMessage}
+                handleImageUpload={handleImageUpload}
+                removeImage={removeImage}
+                formatFileSize={formatFileSize}
+              />
             </>
           ) : (
             <S.EmptyState>
@@ -742,34 +494,13 @@ function App() {
       </S.MainContent>
 
       {/* Create Chat Modal */}
-      {
-        showModal && (
-          <S.CreateChatModal onClick={() => setShowModal(false)}>
-            <S.ModalContent onClick={(e) => e.stopPropagation()}>
-              <S.ModalTitle>Create New Chat</S.ModalTitle>
-              <S.ModalInput
-                type="text"
-                placeholder="Enter chat topic"
-                value={newChatTopic}
-                onChange={(e) => setNewChatTopic(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && createChat()}
-              />
-              <S.ModalButtons>
-                <S.CancelButton
-                  onClick={() => setShowModal(false)}
-                >
-                  Cancel
-                </S.CancelButton>
-                <S.ConfirmButton
-                  onClick={createChat}
-                >
-                  Create
-                </S.ConfirmButton>
-              </S.ModalButtons>
-            </S.ModalContent>
-          </S.CreateChatModal>
-        )
-      }
+      <CreateChatModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        newChatTopic={newChatTopic}
+        setNewChatTopic={setNewChatTopic}
+        createChat={createChat}
+      />
 
       {/* Prompt Settings Modal - Combined */}
 
@@ -789,99 +520,16 @@ function App() {
 
 
       {/* NeiroWork Window */}
-      {
-        showNeiroWorkWindow && (
-          <S.CreateChatModal onClick={() => setShowNeiroWorkWindow(false)}>
-            <S.ModalContent
-              style={{
-                width: '80%',
-                maxWidth: '800px',
-                maxHeight: '80vh',
-                overflowY: 'auto',
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column'
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <S.NeiroWorkWindowTitle>NeiroWork Overview</S.NeiroWorkWindowTitle>
-                <S.MoreButton className="neirowork-menu" onClick={() => setShowGlobalPromptSettings(true)}>
-                  ...
-                </S.MoreButton>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>Analysis of all chat dialogs</p>
-                <S.AnalyzeButton
-                  onClick={fetchAllAnalyses}
-                  disabled={analysesLoading}
-                  style={{ fontSize: '12px', padding: '6px 10px' }}
-                >
-                  {analysesLoading ? 'Loading...' : 'Refresh Analyses'}
-                </S.AnalyzeButton>
-              </div>
-
-              <div style={{ flex: 1, overflowY: 'auto' }}>
-                {analysesLoading ? (
-                  <S.LoadingText>Loading analyses...</S.LoadingText>
-                ) : allAnalyses.length === 0 ? (
-                  <p style={{ textAlign: 'center', color: '#666' }}>No chats found. Create a chat to start analysis.</p>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                    {allAnalyses.map((item) => (
-                      <div key={item.chat.id} style={{
-                        border: '1px solid #e0e0e0',
-                        borderRadius: '8px',
-                        padding: '15px',
-                        backgroundColor: item.hasNewMessages ? '#fff3cd' : '#f8f9fa',
-                        margin: '10px'
-                      }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                          <h4 style={{ margin: 0, fontSize: '16px' }}>{item.chat.topic}</h4>
-                          <S.AnalyzeButton
-                            onClick={() => {
-                              setCurrentChat(item.chat);
-                              setShowNeiroWorkWindow(false);
-                            }}
-                            style={{ fontSize: '12px', padding: '4px 8px' }}
-                          >
-                            View Chat
-                          </S.AnalyzeButton>
-                        </div>
-                        <S.AnalysisContent>
-                          {item.analysis ? (
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>{item.analysis}</ReactMarkdown>
-                          ) : (
-                            'No analysis available. Click "Analyze Dialog" in the chat to generate.'
-                          )}
-                        </S.AnalysisContent>
-                        <div style={{
-                          fontSize: '12px',
-                          color: '#999',
-                          display: 'flex',
-                          justifyContent: 'space-between'
-                        }}>
-                          <span>Created: {new Date(item.chat.created_at).toLocaleString()}</span>
-                          {item.hasNewMessages && (
-                            <span style={{ color: '#ffc107', fontWeight: '500' }}>New messages</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <S.ModalButtons style={{ marginTop: '20px', paddingTop: '15px', margin: '15px' }}>
-                <S.CancelButton
-                  onClick={() => setShowNeiroWorkWindow(false)}
-                >
-                  Close
-                </S.CancelButton>
-              </S.ModalButtons>
-            </S.ModalContent>
-          </S.CreateChatModal>
-        )}
-
+      <NeiroWorkWindow
+        isOpen={showNeiroWorkWindow}
+        onClose={() => setShowNeiroWorkWindow(false)}
+        allAnalyses={allAnalyses}
+        analysesLoading={analysesLoading}
+        fetchAllAnalyses={fetchAllAnalyses}
+        setCurrentChat={setCurrentChat}
+        setShowNeiroWorkWindow={setShowNeiroWorkWindow}
+        setShowGlobalPromptSettings={setShowGlobalPromptSettings}
+      />
       {/* Global Prompt Settings Modal */}
       <NeiroWorkPromptSettingsModal
         isOpen={showGlobalPromptSettings}
@@ -890,7 +538,12 @@ function App() {
       {/* Login Modal */}
       <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
       {/* Company Selector Modal */}
-      <CompanySelectorModal isOpen={showCompanySelector} onClose={() => setShowCompanySelector(false)} />
+      <CompanySelectorModal
+        isOpen={showCompanySelector}
+        onClose={() => setShowCompanySelector(false)}
+        onCreateCompanyClick={() => setShowCreateCompany(true)}
+        onJoinCompanyClick={() => setShowJoinCompany(true)}
+      />
 
       {/* Create Company Modal */}
       <CreateCompanyModal

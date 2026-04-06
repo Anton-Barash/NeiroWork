@@ -8,6 +8,7 @@ import { connectDB } from './config/database';
 import chatRoutes from './routes/chat';
 import fileRoutes from './routes/files';
 import authRoutes from './routes/auth';
+import userRoutes from './routes/users';
 
 
 // Load environment variables
@@ -41,6 +42,7 @@ app.register(staticPlugin, {
 app.register(chatRoutes, { prefix: '/api/chat' });
 app.register(fileRoutes, { prefix: '/api/files' });
 app.register(authRoutes, { prefix: '/api/auth' });
+app.register(userRoutes, { prefix: '/api' });
 
 
 // Import prompts routes

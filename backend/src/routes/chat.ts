@@ -18,12 +18,12 @@ interface AnalyzeChatRequest {
 
 const chatRoutes = async (app: FastifyInstance) => {
   // Create new chat
-  app.post('/create', async (request: FastifyRequest<{ Body: CreateChatRequest }>, reply: FastifyReply) => {
+  app.post('/create', async (request: FastifyRequest<{ Body: CreateChatRequest & { company_id: number } }>, reply: FastifyReply) => {
     try {
-      const { topic } = request.body;
+      const { topic, company_id } = request.body;
       const result = await pool.query(
-        'INSERT INTO chats (topic) VALUES ($1) RETURNING id, topic, created_at',
-        [topic]
+        'INSERT INTO chats (topic, company_id) VALUES ($1, $2) RETURNING id, topic, company_id, created_at',
+        [topic, company_id]
       );
       reply.send(result.rows[0]);
     } catch (error) {
@@ -32,11 +32,20 @@ const chatRoutes = async (app: FastifyInstance) => {
   });
 
   // Get all chats
-  app.get('/list', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get('/list', async (request: FastifyRequest<{ Querystring: { company_id?: number } }>, reply: FastifyReply) => {
     try {
-      const result = await pool.query(
-        'SELECT id, topic, created_at FROM chats ORDER BY created_at DESC'
-      );
+      const { company_id } = request.query;
+      let query = 'SELECT id, topic, company_id, created_at FROM chats';
+      const params = [];
+      
+      if (company_id) {
+        query += ' WHERE company_id = $1';
+        params.push(company_id);
+      }
+      
+      query += ' ORDER BY created_at DESC';
+      
+      const result = await pool.query(query, params);
       reply.send(result.rows);
     } catch (error) {
       reply.status(500).send({ error: 'Failed to get chats' });

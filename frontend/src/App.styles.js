@@ -67,6 +67,7 @@ export const SidebarTopRow = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 `;
 
 export const MoreButton = styled.button`
@@ -80,6 +81,25 @@ export const MoreButton = styled.button`
 
   &:hover {
     background: #e9ecef;
+  }
+`;
+
+export const CompanySelectorButton = styled.button`
+  background: none;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
   }
 `;
 

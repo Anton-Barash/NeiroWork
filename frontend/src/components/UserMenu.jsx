@@ -44,28 +44,17 @@ const UserMenuButton = styled.button`
   }
 `;
 
-const UserMenu = ({ onSettingsClick, onCreateCompanyClick, onJoinCompanyClick }) => {
-    const { user } = useAuth();
+const UserMenu = () => {
+  const { user } = useAuth();
 
-    return (
-        <UserMenuContainer>
-            <UserInfo>
-                <UserName>{user?.username || 'User'}</UserName>
-                <UserEmail>{user?.email || 'user@example.com'}</UserEmail>
-            </UserInfo>
-            <div style={{ display: 'flex', gap: '8px' }}>
-                <UserMenuButton onClick={onCreateCompanyClick}>
-                    New Company
-                </UserMenuButton>
-                <UserMenuButton onClick={onJoinCompanyClick}>
-                    Join Company
-                </UserMenuButton>
-                <UserMenuButton onClick={onSettingsClick}>
-                    Настройки
-                </UserMenuButton>
-            </div>
-        </UserMenuContainer>
-    );
+  return (
+    <UserMenuContainer>
+      <UserInfo>
+        <UserName>{user?.username || 'User'}</UserName>
+        <UserEmail>{user?.email || 'user@example.com'}</UserEmail>
+      </UserInfo>
+    </UserMenuContainer>
+  );
 };
 
 export default UserMenu;

@@ -180,7 +180,7 @@ const CreateCompanyModal = ({ isOpen, onClose, onCompanyCreated }) => {
         setSuccess('');
 
         try {
-            const response = await axios.post('/api/users/companies', formData);
+            const response = await axios.post('/api/companies', formData);
 
             setSuccess('Компания успешно создана!');
             setFormData({ name: '', description: '' });

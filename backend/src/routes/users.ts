@@ -98,14 +98,18 @@ const userRoutes = async (app: FastifyInstance) => {
             // Get current user ID from session
             const userId = 1; // TODO: Get from session
 
+            // Generate code and unique_id
+            const code = name.toUpperCase().replace(/\s+/g, '_') + '_' + Math.floor(Math.random() * 1000);
+            const unique_id = 'COMPANY_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
+
             const client = await pool.connect();
             try {
                 await client.query('BEGIN');
 
-                // Create company (unique_id генерируется автоматически)
+                // Create company
                 const companyResult = await client.query(
-                    'INSERT INTO companies (name, description, created_by) VALUES ($1, $2, $3) RETURNING id, name, description, unique_id, created_at',
-                    [name, description || null, userId]
+                    'INSERT INTO companies (name, description, code, unique_id, created_by) VALUES ($1, $2, $3, $4, $5) RETURNING id, name, description, code, unique_id, created_at',
+                    [name, description || null, code, unique_id, userId]
                 );
 
                 // Add creator as owner

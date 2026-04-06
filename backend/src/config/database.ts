@@ -30,6 +30,55 @@ export const connectDB = async () => {
 
 const createTables = async () => {
   try {
+    // Check companies table structure
+    try {
+      const tableInfo = await pool.query(`
+        SELECT column_name, data_type, is_nullable
+        FROM information_schema.columns
+        WHERE table_name = 'companies'
+      `);
+      console.log('Companies table structure:', tableInfo.rows);
+    } catch (infoError) {
+      console.log('Could not check companies table structure:', infoError);
+    }
+
+    // Create users table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        email VARCHAR(255) UNIQUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create companies table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS companies (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        description TEXT,
+        code VARCHAR(255) NOT NULL UNIQUE,
+        unique_id VARCHAR(255) NOT NULL UNIQUE,
+        created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create user_companies table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_companies (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
+        role VARCHAR(50) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, company_id)
+      )
+    `);
+
     // Create chats table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS chats (
@@ -102,27 +151,6 @@ const createTables = async () => {
       )
     `);
 
-    // Create users table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        username VARCHAR(255) UNIQUE NOT NULL,
-        password VARCHAR(255) NOT NULL,
-        email VARCHAR(255) UNIQUE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Create companies table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS companies (
-        id SERIAL PRIMARY KEY,
-        name VARCHAR(255) NOT NULL,
-        description TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
     // Insert default prompts if they don't exist
     await pool.query(`
       INSERT INTO ai_prompts (name, prompt_text, version) 
@@ -135,15 +163,22 @@ const createTables = async () => {
 
     // Insert default user and company for testing
     await pool.query(`
-      INSERT INTO companies (name, description) 
-      VALUES ('company1', 'Default company for user1')
-      ON CONFLICT DO NOTHING
+      INSERT INTO companies (name, description, code, unique_id, created_by) 
+      VALUES ('company1', 'Default company for user1', 'COMPANY1', 'COMPANY1_UNIQUE_ID', 1)
+      ON CONFLICT (code) DO NOTHING
     `);
 
     await pool.query(`
-      INSERT INTO users (username, password) 
-      VALUES ('user1', 'password123')
+      INSERT INTO users (username, password, email) 
+      VALUES ('user1', 'password123', 'user1@example.com')
       ON CONFLICT (username) DO NOTHING
+    `);
+
+    // Add default user to company as owner
+    await pool.query(`
+      INSERT INTO user_companies (user_id, company_id, role) 
+      VALUES (1, 1, 'owner')
+      ON CONFLICT (user_id, company_id) DO NOTHING
     `);
 
     console.log('Database tables created successfully');

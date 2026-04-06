@@ -19,13 +19,27 @@ const ModalOverlay = styled.div`
 const ModalContent = styled.div`
   background: white;
   border-radius: 8px;
-  padding: 24px;
   width: 90%;
   max-width: 500px;
   position: relative;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+`;
+
+const ModalBody = styled.div`
+  padding: 24px;
+  flex: 1;
   overflow-y: auto;
+`;
+
+const ModalFooter = styled.div`
+  padding: 24px;
+  border-top: 1px solid #dee2e6;
+  background: white;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
 `;
 
 const ModalTitle = styled.h2`
@@ -96,7 +110,7 @@ const Button = styled.button`
   }
 `;
 
-function CompanySelectorModal({ isOpen, onClose }) {
+function CompanySelectorModal({ isOpen, onClose, onCreateCompanyClick, onJoinCompanyClick }) {
     const { user, company, setCompany } = useAuth();
     const [companies, setCompanies] = React.useState([]);
     const [loading, setLoading] = React.useState(false);
@@ -133,34 +147,45 @@ function CompanySelectorModal({ isOpen, onClose }) {
     return (
         <ModalOverlay onClick={onClose}>
             <ModalContent onClick={(e) => e.stopPropagation()}>
-                <ModalTitle>Выбор компании</ModalTitle>
+                <ModalBody>
+                    <ModalTitle>Выбор компании</ModalTitle>
 
-                {company && (
-                    <CurrentCompany>
-                        <CompanyName>Текущая компания: {company.name}</CompanyName>
-                        {company.description && <CompanyDescription>{company.description}</CompanyDescription>}
-                    </CurrentCompany>
-                )}
+                    {company && (
+                        <CurrentCompany>
+                            <CompanyName>Текущая компания: {company.name}</CompanyName>
+                            {company.description && <CompanyDescription>{company.description}</CompanyDescription>}
+                        </CurrentCompany>
+                    )}
 
-                {loading ? (
-                    <div style={{ textAlign: 'center', padding: '20px' }}>Загрузка компаний...</div>
-                ) : (
-                    <CompanyList>
-                        {companies.map((companyData) => (
-                            <CompanyItem
-                                key={companyData.id}
-                                onClick={() => selectCompany(companyData)}
-                            >
-                                <CompanyName>{companyData.name}</CompanyName>
-                                {companyData.description && <CompanyDescription>{companyData.description}</CompanyDescription>}
-                            </CompanyItem>
-                        ))}
-                    </CompanyList>
-                )}
-
-                <ModalButtons>
-                    <Button onClick={onClose}>Закрыть</Button>
-                </ModalButtons>
+                    {loading ? (
+                        <div style={{ textAlign: 'center', padding: '20px' }}>Загрузка компаний...</div>
+                    ) : (
+                        <CompanyList>
+                            {companies.map((companyData) => (
+                                <CompanyItem
+                                    key={companyData.id}
+                                    onClick={() => selectCompany(companyData)}
+                                >
+                                    <CompanyName>{companyData.name}</CompanyName>
+                                    {companyData.description && <CompanyDescription>{companyData.description}</CompanyDescription>}
+                                </CompanyItem>
+                            ))}
+                        </CompanyList>
+                    )}
+                </ModalBody>
+                <ModalFooter>
+                    <ModalButtons>
+                        <Button onClick={onCreateCompanyClick} style={{ backgroundColor: '#28a745' }}>
+                            New Company
+                        </Button>
+                        <Button onClick={onJoinCompanyClick} style={{ backgroundColor: '#17a2b8' }}>
+                            Join Company
+                        </Button>
+                        <Button onClick={onClose} style={{ backgroundColor: '#6c757d' }}>
+                            Закрыть
+                        </Button>
+                    </ModalButtons>
+                </ModalFooter>
             </ModalContent>
         </ModalOverlay>
     );
