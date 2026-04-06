@@ -44,15 +44,18 @@ const chatRoutes = async (app: FastifyInstance) => {
   });
 
   // Get chat messages
-  app.get('/:chatId/messages', async (request: FastifyRequest<{ Params: { chatId: string } }>, reply: FastifyReply) => {
+  app.get('/:chatId/chat-messages', async (request: FastifyRequest<{ Params: { chatId: string } }>, reply: FastifyReply) => {
     try {
       const { chatId } = request.params;
+      console.log('[GET /:chatId/messages] Fetching messages for chat:', chatId);
       const result = await pool.query(
-        'SELECT id, parent_id, content, role, created_at FROM messages WHERE chat_id = $1 ORDER BY created_at ASC',
+        'SELECT id, parent_id, user_id, content, role, created_at FROM messages WHERE chat_id = $1 ORDER BY created_at ASC',
         [chatId]
       );
+      console.log('[GET /:chatId/messages] Found messages:', result.rows.length);
       reply.send(result.rows);
     } catch (error) {
+      console.error('[GET /:chatId/messages] Error:', error);
       reply.status(500).send({ error: 'Failed to get messages' });
     }
   });
@@ -67,11 +70,13 @@ const chatRoutes = async (app: FastifyInstance) => {
 
   app.post('/send', async (request: FastifyRequest<{ Body: SendMessageBody }>, reply: FastifyReply) => {
     try {
-      const { chat_id, content, parent_id, images } = request.body;
+      const { chat_id, content, parent_id, images, user_id } = request.body;
 
       if (!chat_id || !content) {
         return reply.status(400).send({ error: 'chat_id and content are required' });
       }
+
+      const messageUserId = user_id || null;
 
       let messageContent: string | Array<{ type: string, text?: string, image_url?: { url: string } }>;
 
@@ -95,12 +100,12 @@ const chatRoutes = async (app: FastifyInstance) => {
         : JSON.stringify(messageContent);
 
       const userMessageResult = await pool.query(
-        'INSERT INTO messages (chat_id, parent_id, content, role) VALUES ($1, $2, $3, $4) RETURNING id, parent_id, content, role, created_at',
-        [chat_id, parent_id, storedContent, 'user']
+        'INSERT INTO messages (chat_id, parent_id, user_id, content, role) VALUES ($1, $2, $3, $4, $5) RETURNING id, parent_id, user_id, content, role, created_at',
+        [chat_id, parent_id, messageUserId, storedContent, 'user']
       );
 
       const historyResult = await pool.query(
-        'SELECT role, content FROM messages WHERE chat_id = $1 ORDER BY created_at ASC',
+        'SELECT id, user_id, role, content, created_at FROM messages WHERE chat_id = $1 ORDER BY created_at ASC',
         [chat_id]
       );
 
@@ -108,11 +113,14 @@ const chatRoutes = async (app: FastifyInstance) => {
         try {
           const parsed = JSON.parse(row.content);
           return {
+            id: row.id,
+            user_id: row.user_id,
             role: row.role,
-            content: typeof parsed === 'object' ? parsed : String(parsed)
+            content: typeof parsed === 'object' ? parsed : String(parsed),
+            created_at: row.created_at
           };
         } catch {
-          return { role: row.role, content: row.content };
+          return { id: row.id, user_id: row.user_id, role: row.role, content: row.content, created_at: row.created_at };
         }
       });
 

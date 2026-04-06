@@ -1,0 +1,125 @@
+import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import pool from '../config/database';
+
+interface CreateUserRequest {
+    username: string;
+    password: string;
+    email?: string;
+}
+
+interface CreateCompanyRequest {
+    name: string;
+    description?: string;
+}
+
+const userRoutes = async (app: FastifyInstance) => {
+    // Get all users
+    app.get('/users', async (request: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const result = await pool.query('SELECT id, username, email, created_at FROM users ORDER BY created_at DESC');
+            reply.send(result.rows);
+        } catch (error) {
+            reply.status(500).send({ error: 'Failed to get users' });
+        }
+    });
+
+    // Get user by ID
+    app.get('/users/:userId', async (request: FastifyRequest<{ Params: { userId: string } }>, reply: FastifyReply) => {
+        try {
+            const { userId } = request.params;
+            const result = await pool.query('SELECT id, username, email, created_at FROM users WHERE id = $1', [userId]);
+
+            if (result.rows.length === 0) {
+                return reply.status(404).send({ error: 'User not found' });
+            }
+
+            reply.send(result.rows[0]);
+        } catch (error) {
+            reply.status(500).send({ error: 'Failed to get user' });
+        }
+    });
+
+    // Create user
+    app.post('/users', async (request: FastifyRequest<{ Body: CreateUserRequest }>, reply: FastifyReply) => {
+        try {
+            const { username, password, email } = request.body;
+
+            if (!username || !password) {
+                return reply.status(400).send({ error: 'Username and password are required' });
+            }
+
+            const result = await pool.query(
+                'INSERT INTO users (username, password, email) VALUES ($1, $2, $3) RETURNING id, username, email, created_at',
+                [username, password, email || null]
+            );
+
+            reply.send(result.rows[0]);
+        } catch (error) {
+            console.error('Create user error:', error);
+            reply.status(500).send({ error: 'Failed to create user' });
+        }
+    });
+
+    // Get all companies
+    app.get('/companies', async (request: FastifyRequest, reply: FastifyReply) => {
+        try {
+            const result = await pool.query('SELECT id, name, description, created_at FROM companies ORDER BY created_at DESC');
+            reply.send(result.rows);
+        } catch (error) {
+            reply.status(500).send({ error: 'Failed to get companies' });
+        }
+    });
+
+    // Get company by ID
+    app.get('/companies/:companyId', async (request: FastifyRequest<{ Params: { companyId: string } }>, reply: FastifyReply) => {
+        try {
+            const { companyId } = request.params;
+            const result = await pool.query('SELECT id, name, description, created_at FROM companies WHERE id = $1', [companyId]);
+
+            if (result.rows.length === 0) {
+                return reply.status(404).send({ error: 'Company not found' });
+            }
+
+            reply.send(result.rows[0]);
+        } catch (error) {
+            reply.status(500).send({ error: 'Failed to get company' });
+        }
+    });
+
+    // Create company
+    app.post('/companies', async (request: FastifyRequest<{ Body: CreateCompanyRequest }>, reply: FastifyReply) => {
+        try {
+            const { name, description } = request.body;
+
+            if (!name) {
+                return reply.status(400).send({ error: 'Company name is required' });
+            }
+
+            const result = await pool.query(
+                'INSERT INTO companies (name, description) VALUES ($1, $2) RETURNING id, name, description, created_at',
+                [name, description || null]
+            );
+
+            reply.send(result.rows[0]);
+        } catch (error) {
+            console.error('Create company error:', error);
+            reply.status(500).send({ error: 'Failed to create company' });
+        }
+    });
+
+    // Get chats for a specific company
+    app.get('/companies/:companyId/chats', async (request: FastifyRequest<{ Params: { companyId: string } }>, reply: FastifyReply) => {
+        try {
+            const { companyId } = request.params;
+            const result = await pool.query(
+                'SELECT id, topic, created_at FROM chats WHERE company_id = $1 ORDER BY created_at DESC',
+                [companyId]
+            );
+            reply.send(result.rows);
+        } catch (error) {
+            reply.status(500).send({ error: 'Failed to get company chats' });
+        }
+    });
+};
+
+export default userRoutes;

@@ -7,6 +7,8 @@ import dotenv from 'dotenv';
 import { connectDB } from './config/database';
 import chatRoutes from './routes/chat';
 import fileRoutes from './routes/files';
+import authRoutes from './routes/auth';
+
 
 // Load environment variables
 dotenv.config();
@@ -38,6 +40,8 @@ app.register(staticPlugin, {
 // Routes
 app.register(chatRoutes, { prefix: '/api/chat' });
 app.register(fileRoutes, { prefix: '/api/files' });
+app.register(authRoutes, { prefix: '/api/auth' });
+
 
 // Import prompts routes
 import promptRoutes from './routes/prompts';

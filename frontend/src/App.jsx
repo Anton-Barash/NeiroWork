@@ -5,8 +5,14 @@ import remarkGfm from 'remark-gfm';
 import * as S from './App.styles';
 import PromptSettingsModal from './components/modals/PromptSettingsModal';
 import NeiroWorkPromptSettingsModal from './components/modals/NeiroWorkPromptSettingsModal';
+import LoginModal from './components/modals/LoginModal';
+import CompanySelectorModal from './components/modals/CompanySelectorModal';
+import { useAuth } from './context/AuthContext';
 
 function App() {
+  const { user, isAuthenticated, loading: authLoading, logout, company, setCompany } = useAuth();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showCompanySelector, setShowCompanySelector] = useState(false);
   const [chats, setChats] = useState([]);
   const [currentChat, setCurrentChat] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -60,7 +66,14 @@ function App() {
   const [showNeiroWorkMenu, setShowNeiroWorkMenu] = useState(false);
   const messagesEndRef = useRef(null);
 
-
+  // Show login modal if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      setShowLoginModal(true);
+    } else {
+      setShowLoginModal(false);
+    }
+  }, [authLoading, isAuthenticated]);
 
   // Fetch chats on component mount
   useEffect(() => {
@@ -131,7 +144,8 @@ function App() {
   const fetchMessages = async () => {
     if (!currentChat) return;
     try {
-      const response = await axios.get(`/api/chat/${currentChat.id}/messages`);
+      const response = await axios.get(`/api/chat/${currentChat.id}/chat-messages`);
+      console.log('Messages response:', response.data);
       setMessages(response.data);
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -284,10 +298,12 @@ function App() {
 
     setIsLoading(true);
     try {
+      console.log('Sending message, user:', user);
       const response = await axios.post('/api/chat/send', {
         chat_id: currentChat.id,
         content: newMessage,
         images: uploadedImages.map(img => ({ url: img.url })),
+        user_id: user?.id || null,
       });
 
       setMessages([
@@ -563,16 +579,20 @@ function App() {
                       content = message.content;
                     }
 
+                    const senderName = message.role === 'user' ? (user?.username || 'User') : 'AI Assistant';
+                    const avatarInitial = senderName.charAt(0).toUpperCase();
+
                     return (
-                      <S.MessageBubble
-                        key={message.id}
-                        role={message.role}
-                      >
-                        <S.MessageContent>{content}</S.MessageContent>
-                        <S.MessageTime role={message.role}>
-                          {formatTime(message.created_at)}
-                        </S.MessageTime>
-                      </S.MessageBubble>
+                      <S.MessageContainer key={message.id} role={message.role}>
+                        <S.Avatar role={message.role}>{avatarInitial}</S.Avatar>
+                        <S.MessageInfoColumn>
+                          <S.SenderName role={message.role}>{senderName}</S.SenderName>
+                          <S.MessageBubble role={message.role}>
+                            <S.MessageContent>{content}</S.MessageContent>
+                          </S.MessageBubble>
+                          <S.MessageTime role={message.role}>{formatTime(message.created_at)}</S.MessageTime>
+                        </S.MessageInfoColumn>
+                      </S.MessageContainer>
                     );
                   })
                 }
@@ -844,6 +864,10 @@ function App() {
         isOpen={showGlobalPromptSettings}
         onClose={() => setShowGlobalPromptSettings(false)}
       />
+      {/* Login Modal */}
+      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+      {/* Company Selector Modal */}
+      <CompanySelectorModal isOpen={showCompanySelector} onClose={() => setShowCompanySelector(false)} />
     </S.AppContainer>
   );
 }

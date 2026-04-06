@@ -241,16 +241,48 @@ export const MessagesContainer = styled.div`
   gap: 20px;
 `;
 
-export const MessageBubble = styled.div`
+export const MessageContainer = styled.div`
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  flex-direction: ${props => props.role === 'user' ? 'row-reverse' : 'row'};
+`;
+
+export const Avatar = styled.div`
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: ${props => props.role === 'user' ? '#007bff' : '#6c757d'};
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+`;
+
+export const MessageInfoColumn = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   max-width: 80%;
-  padding: 15px;
+`;
+
+export const SenderName = styled.div`
+  font-size: 12px;
+  font-weight: 500;
+  color: #888;
+  text-align: ${props => props.role === 'user' ? 'right' : 'left'};
+`;
+
+export const MessageBubble = styled.div`
+  padding: 12px 16px;
   border-radius: 12px;
-  position: relative;
-  align-self: ${props => props.role === 'user' ? 'flex-end' : 'flex-start'};
   background-color: ${props => props.role === 'user' ? '#007bff' : '#fff'};
   color: ${props => props.role === 'user' ? 'white' : '#333'};
   border: ${props => props.role === 'user' ? 'none' : '1px solid #e0e0e0'};
-  border-bottom-${props => props.role === 'user' ? 'right' : 'left'}-radius: 4px;
+  border-bottom-${props => props.role === 'user' ? 'right' : 'left'}-radius: 2px;
 `;
 
 export const MessageContent = styled.div`
@@ -260,9 +292,9 @@ export const MessageContent = styled.div`
 
 export const MessageTime = styled.div`
   font-size: 11px;
-  color: ${props => props.role === 'user' ? 'rgba(255, 255, 255, 0.7)' : '#999'};
+  color: #888;
   text-align: ${props => props.role === 'user' ? 'right' : 'left'};
-  margin-top: 5px;
+  margin-top: 2px;
 `;
 
 export const LoadingIndicator = styled.div`
