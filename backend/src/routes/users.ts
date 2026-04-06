@@ -86,7 +86,7 @@ const userRoutes = async (app: FastifyInstance) => {
         }
     });
 
-    // Create company
+    // Create company with role system
     app.post('/companies', async (request: FastifyRequest<{ Body: CreateCompanyRequest }>, reply: FastifyReply) => {
         try {
             const { name, description } = request.body;
@@ -95,12 +95,33 @@ const userRoutes = async (app: FastifyInstance) => {
                 return reply.status(400).send({ error: 'Company name is required' });
             }
 
-            const result = await pool.query(
-                'INSERT INTO companies (name, description) VALUES ($1, $2) RETURNING id, name, description, created_at',
-                [name, description || null]
-            );
+            // Get current user ID from session
+            const userId = 1; // TODO: Get from session
 
-            reply.send(result.rows[0]);
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN');
+
+                // Create company (unique_id генерируется автоматически)
+                const companyResult = await client.query(
+                    'INSERT INTO companies (name, description, created_by) VALUES ($1, $2, $3) RETURNING id, name, description, unique_id, created_at',
+                    [name, description || null, userId]
+                );
+
+                // Add creator as owner
+                await client.query(
+                    'INSERT INTO user_companies (user_id, company_id, role) VALUES ($1, $2, $3)',
+                    [userId, companyResult.rows[0].id, 'owner']
+                );
+
+                await client.query('COMMIT');
+                reply.send(companyResult.rows[0]);
+            } catch (e) {
+                await client.query('ROLLBACK');
+                throw e;
+            } finally {
+                client.release();
+            }
         } catch (error) {
             console.error('Create company error:', error);
             reply.status(500).send({ error: 'Failed to create company' });
@@ -118,6 +139,72 @@ const userRoutes = async (app: FastifyInstance) => {
             reply.send(result.rows);
         } catch (error) {
             reply.status(500).send({ error: 'Failed to get company chats' });
+        }
+    });
+
+    // Join company by unique ID
+    app.post('/companies/join', async (request: FastifyRequest<{ Body: { companyId: string } }>, reply: FastifyReply) => {
+        try {
+            const { companyId } = request.body;
+
+            if (!companyId) {
+                return reply.status(400).send({ error: 'Company unique ID is required' });
+            }
+
+            // Get current user ID from session
+            const userId = 1; // TODO: Get from session
+
+            const client = await pool.connect();
+            try {
+                await client.query('BEGIN');
+
+                // Find company by unique_id
+                const companyResult = await client.query(
+                    'SELECT id, name FROM companies WHERE unique_id = $1',
+                    [companyId]
+                );
+
+                if (companyResult.rows.length === 0) {
+                    await client.query('ROLLBACK');
+                    return reply.status(404).send({ error: 'Company not found' });
+                }
+
+                const company = companyResult.rows[0];
+
+                // Check if user is already in the company
+                const existingResult = await client.query(
+                    'SELECT * FROM user_companies WHERE user_id = $1 AND company_id = $2',
+                    [userId, company.id]
+                );
+
+                if (existingResult.rows.length > 0) {
+                    await client.query('ROLLBACK');
+                    return reply.status(400).send({ error: 'User is already in this company' });
+                }
+
+                // Add user to company as member
+                await client.query(
+                    'INSERT INTO user_companies (user_id, company_id, role) VALUES ($1, $2, $3)',
+                    [userId, company.id, 'member']
+                );
+
+                await client.query('COMMIT');
+                reply.send({
+                    success: true,
+                    company: {
+                        id: company.id,
+                        name: company.name
+                    }
+                });
+            } catch (e) {
+                await client.query('ROLLBACK');
+                throw e;
+            } finally {
+                client.release();
+            }
+        } catch (error) {
+            console.error('Join company error:', error);
+            reply.status(500).send({ error: 'Failed to join company' });
         }
     });
 };

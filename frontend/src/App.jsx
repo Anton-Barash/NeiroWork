@@ -7,12 +7,28 @@ import PromptSettingsModal from './components/modals/PromptSettingsModal';
 import NeiroWorkPromptSettingsModal from './components/modals/NeiroWorkPromptSettingsModal';
 import LoginModal from './components/modals/LoginModal';
 import CompanySelectorModal from './components/modals/CompanySelectorModal';
+import CreateCompanyModal from './components/modals/CreateCompanyModal';
+import JoinCompanyModal from './components/modals/JoinCompanyModal';
 import { useAuth } from './context/AuthContext';
+import MessageReactions from './components/MessageReactions';
+import MessageEditor from './components/MessageEditor.jsx';
+import TypingIndicator from './components/TypingIndicator';
+import UserMenu from './components/UserMenu.jsx';
 
 function App() {
   const { user, isAuthenticated, loading: authLoading, logout, company, setCompany } = useAuth();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showCompanySelector, setShowCompanySelector] = useState(false);
+  const [showCreateCompany, setShowCreateCompany] = useState(false);
+  const [showJoinCompany, setShowJoinCompany] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState(null);
+
+  // Handle company creation
+  const handleCompanyCreated = (newCompany) => {
+    console.log('Company created:', newCompany);
+    // TODO: Update company context or refresh company list
+    // setCompany(newCompany); // Set the new company as current
+  };
   const [chats, setChats] = useState([]);
   const [currentChat, setCurrentChat] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -493,6 +509,13 @@ function App() {
             ))
           }
         </S.ChatList>
+
+        {/* User Menu */}
+        <UserMenu
+          onSettingsClick={() => setShowCompanySelector(true)}
+          onCreateCompanyClick={() => setShowCreateCompany(true)}
+          onJoinCompanyClick={() => setShowJoinCompany(true)}
+        />
       </S.Sidebar>
 
       {/* Main Content */}
@@ -598,7 +621,7 @@ function App() {
                 }
                 {
                   isLoading && (
-                    <S.LoadingText>Thinking...</S.LoadingText>
+                    <TypingIndicator visible={isLoading} />
                   )
                 }
                 <div ref={messagesEndRef} />
@@ -868,6 +891,23 @@ function App() {
       <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
       {/* Company Selector Modal */}
       <CompanySelectorModal isOpen={showCompanySelector} onClose={() => setShowCompanySelector(false)} />
+
+      {/* Create Company Modal */}
+      <CreateCompanyModal
+        isOpen={showCreateCompany}
+        onClose={() => setShowCreateCompany(false)}
+        onCompanyCreated={handleCompanyCreated}
+      />
+
+      {/* Join Company Modal */}
+      <JoinCompanyModal
+        isOpen={showJoinCompany}
+        onClose={() => setShowJoinCompany(false)}
+        onCompanyJoined={(company) => {
+          console.log('Company joined:', company);
+          // TODO: Update company list
+        }}
+      />
     </S.AppContainer>
   );
 }
