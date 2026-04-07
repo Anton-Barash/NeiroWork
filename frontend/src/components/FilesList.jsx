@@ -1,7 +1,7 @@
 import React from 'react';
 import * as S from '../App.styles';
 
-const FilesList = ({ files, deleteFile, formatFileSize }) => {
+const FilesList = React.memo(({ files, deleteFile, formatFileSize }) => {
   if (files.length === 0) return null;
 
   return (
@@ -23,6 +23,6 @@ const FilesList = ({ files, deleteFile, formatFileSize }) => {
         ))}
     </S.FilesListContainer>
   );
-};
+});
 
 export default FilesList;

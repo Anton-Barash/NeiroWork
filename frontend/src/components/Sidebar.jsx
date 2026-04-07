@@ -1,20 +1,20 @@
 import React from 'react';
 import * as S from '../App.styles';
-import UserMenu from './UserMenu.jsx';
+import UserMenu from './UserMenu';
 
-const Sidebar = ({ 
-  chats, 
-  currentChat, 
-  company, 
-  showModal, 
-  setShowModal, 
-  showCompanySelector, 
-  setShowCompanySelector, 
-  showSidebarMenu, 
-  setShowSidebarMenu, 
-  showGlobalPromptSettings, 
-  setShowGlobalPromptSettings, 
-  showNeiroWorkWindow, 
+const Sidebar = React.memo(({
+  chats,
+  currentChat,
+  company,
+  showModal,
+  setShowModal,
+  showCompanySelector,
+  setShowCompanySelector,
+  showSidebarMenu,
+  setShowSidebarMenu,
+  showGlobalPromptSettings,
+  setShowGlobalPromptSettings,
+  showNeiroWorkWindow,
   setShowNeiroWorkWindow,
   fetchAllAnalyses,
   setCurrentChat,
@@ -66,7 +66,7 @@ const Sidebar = ({
             >
               <h3>{chat.topic}</h3>
               <p>
-                {chats.filter((m) => m.id === chat.id).length} messages
+                {chat.message_count || 0} messages
               </p>
               <small>{new Date(chat.created_at).toLocaleDateString()}</small>
             </S.ChatItem>
@@ -78,6 +78,6 @@ const Sidebar = ({
       <UserMenu />
     </S.Sidebar>
   );
-};
+});
 
 export default Sidebar;

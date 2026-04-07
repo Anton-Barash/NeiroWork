@@ -1,15 +1,7 @@
 import React from 'react';
 import * as S from '../App.styles';
 
-const ChatHeader = ({ 
-  currentChat, 
-  analysisLoading, 
-  analyzeChat, 
-  showChatMenu, 
-  setShowChatMenu, 
-  setShowCustomPromptSettings, 
-  deleteChat 
-}) => {
+const ChatHeader = React.memo(({ currentChat, analysisLoading, analyzeChat, showChatMenu, setShowChatMenu, setShowCustomPromptSettings, deleteChat }) => {
   return (
     <S.ChatHeader>
       <S.ChatTitle>{currentChat.topic}</S.ChatTitle>
@@ -35,6 +27,6 @@ const ChatHeader = ({
       </div>
     </S.ChatHeader>
   );
-};
+});
 
 export default ChatHeader;

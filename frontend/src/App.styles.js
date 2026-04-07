@@ -967,3 +967,17 @@ export const ChatAnalysisFooter = styled.div`
   display: flex;
   justify-content: space-between;
 `;
+
+export const AuthContainer = styled.div`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #fafafa;
+`;
+
+export const AuthMessage = styled.div`
+  font-size: 18px;
+  color: #666;
+  text-align: center;
+`;

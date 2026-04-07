@@ -125,8 +125,8 @@ function LoginModal({ isOpen, onClose }) {
     };
 
     return (
-        <ModalOverlay onClick={onClose}>
-            <ModalContent onClick={(e) => e.stopPropagation()}>
+        <ModalOverlay>
+            <ModalContent>
                 <ModalTitle>Вход в систему</ModalTitle>
                 {error && <ErrorMessage>{error}</ErrorMessage>}
                 <div style={{ marginBottom: '20px' }}>

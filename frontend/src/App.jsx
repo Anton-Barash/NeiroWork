@@ -1,15 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import * as S from './App.styles';
-import PromptSettingsModal from './components/modals/PromptSettingsModal';
-import NeiroWorkPromptSettingsModal from './components/modals/NeiroWorkPromptSettingsModal';
-import LoginModal from './components/modals/LoginModal';
-import CompanySelectorModal from './components/modals/CompanySelectorModal';
-import CreateCompanyModal from './components/modals/CreateCompanyModal';
-import JoinCompanyModal from './components/modals/JoinCompanyModal';
-import CreateChatModal from './components/modals/CreateChatModal';
 import { useAuth } from './context/AuthContext';
 import Sidebar from './components/Sidebar';
 import ChatHeader from './components/ChatHeader';
@@ -21,6 +14,15 @@ import { chatService } from './services/chatService';
 import { fileService } from './services/fileService';
 import { companyService } from './services/companyService';
 import { promptService } from './services/promptService';
+
+// Lazy load modal components
+const PromptSettingsModal = lazy(() => import('./components/modals/PromptSettingsModal'));
+const NeiroWorkPromptSettingsModal = lazy(() => import('./components/modals/NeiroWorkPromptSettingsModal'));
+const LoginModal = lazy(() => import('./components/modals/LoginModal'));
+const CompanySelectorModal = lazy(() => import('./components/modals/CompanySelectorModal'));
+const CreateCompanyModal = lazy(() => import('./components/modals/CreateCompanyModal'));
+const JoinCompanyModal = lazy(() => import('./components/modals/JoinCompanyModal'));
+const CreateChatModal = lazy(() => import('./components/modals/CreateChatModal'));
 
 function App() {
   const { user, isAuthenticated, loading: authLoading, logout, company, setCompany } = useAuth();
@@ -91,9 +93,12 @@ function App() {
 
   // Show login modal if not authenticated
   useEffect(() => {
+    console.log('Auth state:', { authLoading, isAuthenticated, showLoginModal });
     if (!authLoading && !isAuthenticated) {
+      console.log('Setting showLoginModal to true');
       setShowLoginModal(true);
     } else {
+      console.log('Setting showLoginModal to false');
       setShowLoginModal(false);
     }
   }, [authLoading, isAuthenticated]);
@@ -404,163 +409,175 @@ function App() {
 
   return (
     <S.AppContainer>
-      {/* Sidebar */}
-      <Sidebar
-        chats={chats}
-        currentChat={currentChat}
-        company={company}
-        showModal={showModal}
-        setShowModal={setShowModal}
-        showCompanySelector={showCompanySelector}
-        setShowCompanySelector={setShowCompanySelector}
-        showSidebarMenu={showSidebarMenu}
-        setShowSidebarMenu={setShowSidebarMenu}
-        showGlobalPromptSettings={showGlobalPromptSettings}
-        setShowGlobalPromptSettings={setShowGlobalPromptSettings}
-        showNeiroWorkWindow={showNeiroWorkWindow}
-        setShowNeiroWorkWindow={setShowNeiroWorkWindow}
-        fetchAllAnalyses={fetchAllAnalyses}
-        setCurrentChat={setCurrentChat}
-        setShowAnalysis={setShowAnalysis}
-        setShowNeiroWork={setShowNeiroWork}
-      />
+      {/* Only show sidebar and main content if authenticated */}
+      {isAuthenticated ? (
+        <>
+          {/* Sidebar */}
+          <Sidebar
+            chats={chats}
+            currentChat={currentChat}
+            company={company}
+            showModal={showModal}
+            setShowModal={setShowModal}
+            showCompanySelector={showCompanySelector}
+            setShowCompanySelector={setShowCompanySelector}
+            showSidebarMenu={showSidebarMenu}
+            setShowSidebarMenu={setShowSidebarMenu}
+            showGlobalPromptSettings={showGlobalPromptSettings}
+            setShowGlobalPromptSettings={setShowGlobalPromptSettings}
+            showNeiroWorkWindow={showNeiroWorkWindow}
+            setShowNeiroWorkWindow={setShowNeiroWorkWindow}
+            fetchAllAnalyses={fetchAllAnalyses}
+            setCurrentChat={setCurrentChat}
+            setShowAnalysis={setShowAnalysis}
+            setShowNeiroWork={setShowNeiroWork}
+          />
 
-      {/* Main Content */}
-      <S.MainContent>
-        {
-          currentChat ? (
-            <>
-              {/* Chat Header */}
-              <ChatHeader
-                currentChat={currentChat}
-                analysisLoading={analysisLoading}
-                analyzeChat={analyzeChat}
-                showChatMenu={showChatMenu}
-                setShowChatMenu={setShowChatMenu}
-                setShowCustomPromptSettings={setShowCustomPromptSettings}
-                deleteChat={deleteChat}
-              />
+          {/* Main Content */}
+          <S.MainContent>
+            {
+              currentChat ? (
+                <>
+                  {/* Chat Header */}
+                  <ChatHeader
+                    currentChat={currentChat}
+                    analysisLoading={analysisLoading}
+                    analyzeChat={analyzeChat}
+                    showChatMenu={showChatMenu}
+                    setShowChatMenu={setShowChatMenu}
+                    setShowCustomPromptSettings={setShowCustomPromptSettings}
+                    deleteChat={deleteChat}
+                  />
 
-              {/* Analysis Display */}
-              {showAnalysis && analysis && (
-                <S.AnalysisContainer>
-                  <S.AnalysisHeader>
-                    <S.AnalysisTitle>Dialog Analysis</S.AnalysisTitle>
-                    <S.CloseButton onClick={() => setShowAnalysis(false)}>×</S.CloseButton>
-                  </S.AnalysisHeader>
-                  <S.AnalysisContent>
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysis}</ReactMarkdown>
-                  </S.AnalysisContent>
-                </S.AnalysisContainer>
+                  {/* Analysis Display */}
+                  {showAnalysis && analysis && (
+                    <S.AnalysisContainer>
+                      <S.AnalysisHeader>
+                        <S.AnalysisTitle>Dialog Analysis</S.AnalysisTitle>
+                        <S.CloseButton onClick={() => setShowAnalysis(false)}>×</S.CloseButton>
+                      </S.AnalysisHeader>
+                      <S.AnalysisContent>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysis}</ReactMarkdown>
+                      </S.AnalysisContent>
+                    </S.AnalysisContainer>
+                  )}
+
+                  {/* Messages */}
+                  <MessagesList
+                    messages={messages}
+                    user={user}
+                    isLoading={isLoading}
+                    formatTime={formatTime}
+                  />
+
+                  {/* Files List */}
+                  <FilesList
+                    files={files}
+                    deleteFile={deleteFile}
+                    formatFileSize={formatFileSize}
+                  />
+
+                  {/* Input Area */}
+                  <InputArea
+                    newMessage={newMessage}
+                    setNewMessage={setNewMessage}
+                    uploadedFiles={uploadedFiles}
+                    uploadedImages={uploadedImages}
+                    isLoading={isLoading}
+                    sendMessage={sendMessage}
+                    handleImageUpload={handleImageUpload}
+                    removeImage={removeImage}
+                    formatFileSize={formatFileSize}
+                  />
+                </>
+              ) : (
+                <S.EmptyState>
+                  <S.EmptyTitle>Welcome to NeiroWork</S.EmptyTitle>
+                  <S.EmptyText>Create a new chat to get started</S.EmptyText>
+                  <S.NewChatButton onClick={() => setShowModal(true)}>
+                    + New Chat
+                  </S.NewChatButton>
+                </S.EmptyState>
               )}
+          </S.MainContent>
+        </>
+      ) : (
+        <S.AuthContainer>
+          <S.AuthMessage>Please log in to access NeiroWork</S.AuthMessage>
+        </S.AuthContainer>
+      )}
 
-              {/* Messages */}
-              <MessagesList
-                messages={messages}
-                user={user}
-                isLoading={isLoading}
-                formatTime={formatTime}
-              />
+      {/* Lazy loaded components with Suspense */}
+      <Suspense fallback={<div>Loading...</div>}>
+        {/* Create Chat Modal */}
+        <CreateChatModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          newChatTopic={newChatTopic}
+          setNewChatTopic={setNewChatTopic}
+          createChat={createChat}
+        />
 
-              {/* Files List */}
-              <FilesList
-                files={files}
-                deleteFile={deleteFile}
-                formatFileSize={formatFileSize}
-              />
+        {/* Prompt Settings Modal - Combined */}
+        <PromptSettingsModal
+          isOpen={showCustomPromptSettings}
+          onClose={() => setShowCustomPromptSettings(false)}
+          promptSettings={promptSettings}
+          setPromptSettings={setPromptSettings}
+          useCustomPrompt={useCustomPrompt}
+          setUseCustomPrompt={setUseCustomPrompt}
+          customPrompt={customPrompt}
+          setCustomPrompt={setCustomPrompt}
+          updateCustomPrompt={updateCustomPrompt}
+          updatePromptSettings={updatePromptSettings}
+        />
 
-              {/* Input Area */}
-              <InputArea
-                newMessage={newMessage}
-                setNewMessage={setNewMessage}
-                uploadedFiles={uploadedFiles}
-                uploadedImages={uploadedImages}
-                isLoading={isLoading}
-                sendMessage={sendMessage}
-                handleImageUpload={handleImageUpload}
-                removeImage={removeImage}
-                formatFileSize={formatFileSize}
-              />
-            </>
-          ) : (
-            <S.EmptyState>
-              <S.EmptyTitle>Welcome to NeiroWork</S.EmptyTitle>
-              <S.EmptyText>Create a new chat to get started</S.EmptyText>
-              <S.NewChatButton onClick={() => setShowModal(true)}>
-                + New Chat
-              </S.NewChatButton>
-            </S.EmptyState>
-          )}
-      </S.MainContent>
+        {/* NeiroWork Window */}
+        <NeiroWorkWindow
+          isOpen={showNeiroWorkWindow}
+          onClose={() => setShowNeiroWorkWindow(false)}
+          allAnalyses={allAnalyses}
+          analysesLoading={analysesLoading}
+          fetchAllAnalyses={fetchAllAnalyses}
+          setCurrentChat={setCurrentChat}
+          setShowNeiroWorkWindow={setShowNeiroWorkWindow}
+          setShowGlobalPromptSettings={setShowGlobalPromptSettings}
+        />
 
-      {/* Create Chat Modal */}
-      <CreateChatModal
-        isOpen={showModal}
-        onClose={() => setShowModal(false)}
-        newChatTopic={newChatTopic}
-        setNewChatTopic={setNewChatTopic}
-        createChat={createChat}
-      />
+        {/* Global Prompt Settings Modal */}
+        <NeiroWorkPromptSettingsModal
+          isOpen={showGlobalPromptSettings}
+          onClose={() => setShowGlobalPromptSettings(false)}
+        />
 
-      {/* Prompt Settings Modal - Combined */}
+        {/* Login Modal */}
+        <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
 
-      <PromptSettingsModal
-        isOpen={showCustomPromptSettings}
-        onClose={() => setShowCustomPromptSettings(false)}
-        promptSettings={promptSettings}
-        setPromptSettings={setPromptSettings}
-        useCustomPrompt={useCustomPrompt}
-        setUseCustomPrompt={setUseCustomPrompt}
-        customPrompt={customPrompt}
-        setCustomPrompt={setCustomPrompt}
-        updateCustomPrompt={updateCustomPrompt}
-        updatePromptSettings={updatePromptSettings}
-      />
+        {/* Company Selector Modal */}
+        <CompanySelectorModal
+          isOpen={showCompanySelector}
+          onClose={() => setShowCompanySelector(false)}
+          onCreateCompanyClick={() => setShowCreateCompany(true)}
+          onJoinCompanyClick={() => setShowJoinCompany(true)}
+        />
 
+        {/* Create Company Modal */}
+        <CreateCompanyModal
+          isOpen={showCreateCompany}
+          onClose={() => setShowCreateCompany(false)}
+          onCompanyCreated={handleCompanyCreated}
+        />
 
-
-      {/* NeiroWork Window */}
-      <NeiroWorkWindow
-        isOpen={showNeiroWorkWindow}
-        onClose={() => setShowNeiroWorkWindow(false)}
-        allAnalyses={allAnalyses}
-        analysesLoading={analysesLoading}
-        fetchAllAnalyses={fetchAllAnalyses}
-        setCurrentChat={setCurrentChat}
-        setShowNeiroWorkWindow={setShowNeiroWorkWindow}
-        setShowGlobalPromptSettings={setShowGlobalPromptSettings}
-      />
-      {/* Global Prompt Settings Modal */}
-      <NeiroWorkPromptSettingsModal
-        isOpen={showGlobalPromptSettings}
-        onClose={() => setShowGlobalPromptSettings(false)}
-      />
-      {/* Login Modal */}
-      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
-      {/* Company Selector Modal */}
-      <CompanySelectorModal
-        isOpen={showCompanySelector}
-        onClose={() => setShowCompanySelector(false)}
-        onCreateCompanyClick={() => setShowCreateCompany(true)}
-        onJoinCompanyClick={() => setShowJoinCompany(true)}
-      />
-
-      {/* Create Company Modal */}
-      <CreateCompanyModal
-        isOpen={showCreateCompany}
-        onClose={() => setShowCreateCompany(false)}
-        onCompanyCreated={handleCompanyCreated}
-      />
-
-      {/* Join Company Modal */}
-      <JoinCompanyModal
-        isOpen={showJoinCompany}
-        onClose={() => setShowJoinCompany(false)}
-        onCompanyJoined={(company) => {
-          console.log('Company joined:', company);
-          // TODO: Update company list
-        }}
-      />
+        {/* Join Company Modal */}
+        <JoinCompanyModal
+          isOpen={showJoinCompany}
+          onClose={() => setShowJoinCompany(false)}
+          onCompanyJoined={(company) => {
+            console.log('Company joined:', company);
+            // TODO: Update company list
+          }}
+        />
+      </Suspense>
     </S.AppContainer>
   );
 }
