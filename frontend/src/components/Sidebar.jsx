@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import * as S from '../App.styles';
 import UserMenu from './UserMenu';
 
@@ -8,19 +8,32 @@ const Sidebar = React.memo(({
   company,
   showModal,
   setShowModal,
-  showCompanySelector,
   setShowCompanySelector,
   showSidebarMenu,
   setShowSidebarMenu,
-  showGlobalPromptSettings,
   setShowGlobalPromptSettings,
   showNeiroWorkWindow,
   setShowNeiroWorkWindow,
   fetchAllAnalyses,
   setCurrentChat,
   setShowAnalysis,
-  setShowNeiroWork
+  setShowNeiroWork,
+  setShowCustomPromptSettings,
+  deleteChat
 }) => {
+  const [activeChatMenu, setActiveChatMenu] = useState(null);
+
+  // Close chat menu when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.chat-item-menu')) {
+        setActiveChatMenu(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
   return (
     <S.Sidebar>
       <S.SidebarHeader>
@@ -55,21 +68,54 @@ const Sidebar = React.memo(({
       <S.ChatList>
         {
           chats.map((chat) => (
-            <S.ChatItem
+            <S.ChatItemWithMenu
               key={chat.id}
               active={currentChat?.id === chat.id}
-              onClick={() => {
+            >
+              <div onClick={() => {
                 setCurrentChat(chat);
                 setShowAnalysis(false);
                 setShowNeiroWork(false);
-              }}
-            >
-              <h3>{chat.topic}</h3>
-              <p>
-                {chat.message_count || 0} messages
-              </p>
-              <small>{new Date(chat.created_at).toLocaleDateString()}</small>
-            </S.ChatItem>
+              }} style={{ flex: 1 }}>
+                <h3>{chat.topic}</h3>
+                <p>
+                  {chat.message_count || 0} messages
+                </p>
+                <small>{new Date(chat.created_at).toLocaleDateString()}</small>
+              </div>
+              <div style={{ position: 'relative' }}>
+                <S.ChatItemMenuButton
+                  className="chat-item-menu"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveChatMenu(activeChatMenu === chat.id ? null : chat.id);
+                  }}
+                >
+                  ...
+                </S.ChatItemMenuButton>
+                {activeChatMenu === chat.id && (
+                  <S.DropdownMenu style={{ right: 0, top: '100%', minWidth: '180px' }}>
+                    <S.DropdownItem onClick={() => {
+                      setCurrentChat(chat);
+                      setShowCustomPromptSettings(true);
+                      setActiveChatMenu(null);
+                    }}>
+                      Настройки промпта чата
+                    </S.DropdownItem>
+                    <S.DropdownItem
+                      onClick={() => {
+                        setCurrentChat(chat);
+                        deleteChat();
+                        setActiveChatMenu(null);
+                      }}
+                      style={{ color: '#dc3545' }}
+                    >
+                      Удалить чат
+                    </S.DropdownItem>
+                  </S.DropdownMenu>
+                )}
+              </div>
+            </S.ChatItemWithMenu>
           ))
         }
       </S.ChatList>

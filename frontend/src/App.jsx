@@ -12,7 +12,6 @@ import InputArea from './components/InputArea';
 import NeiroWorkWindow from './components/NeiroWorkWindow';
 import { chatService } from './services/chatService';
 import { fileService } from './services/fileService';
-import { companyService } from './services/companyService';
 import { promptService } from './services/promptService';
 
 // Lazy load modal components
@@ -30,7 +29,6 @@ function App() {
   const [showCompanySelector, setShowCompanySelector] = useState(false);
   const [showCreateCompany, setShowCreateCompany] = useState(false);
   const [showJoinCompany, setShowJoinCompany] = useState(false);
-  const [editingMessageId, setEditingMessageId] = useState(null);
 
   // Handle company creation
   const handleCompanyCreated = (newCompany) => {
@@ -83,7 +81,6 @@ function App() {
     };
     fetchGlobalPromptOnce();
   }, []);
-  const [showAdvancedPromptSettings, setShowAdvancedPromptSettings] = useState(false);
   const [showGlobalPromptSettings, setShowGlobalPromptSettings] = useState(false);
   const [useCustomPrompt, setUseCustomPrompt] = useState(false);
   const [showSidebarMenu, setShowSidebarMenu] = useState(false);
@@ -326,18 +323,7 @@ function App() {
     }
   };
 
-  const handleFileUpload = async (e) => {
-    if (!currentChat || !e.target.files) return;
 
-    const file = e.target.files[0];
-    try {
-      const uploadedFile = await fileService.uploadFile(currentChat.id, file);
-      setFiles([uploadedFile, ...files]);
-      setUploadedFiles([...uploadedFiles, uploadedFile]);
-    } catch (error) {
-      console.error('Error uploading file:', error);
-    }
-  };
 
   const deleteFile = async (fileId) => {
     try {

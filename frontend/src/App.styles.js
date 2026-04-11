@@ -168,6 +168,49 @@ export const ChatItem = styled.div`
   `}
 `;
 
+export const ChatItemWithMenu = styled.div`
+  display: flex;
+  align-items: flex-start;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  position: relative;
+
+  &:hover {
+    background-color: #f0f0f0;
+  }
+
+  &:hover .chat-item-menu {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  ${props => props.active && css`
+    background-color: #e3f2fd;
+  `}
+`;
+
+export const ChatItemMenuButton = styled.button`
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+  color: #495057;
+  border-radius: 4px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+  align-self: flex-start;
+  margin-top: -5px;
+
+  &:hover {
+    background: #e9ecef;
+  }
+`;
+
 export const MainContent = styled.div`
   flex: 1;
   display: flex;
