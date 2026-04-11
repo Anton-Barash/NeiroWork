@@ -219,12 +219,16 @@ export const MainContent = styled.div`
 `;
 
 export const ChatHeader = styled.div`
+  backdrop-filter: grayscale(1) blur(1px);
   padding: 20px;
-  background-color: #fff;
-  border-bottom: 1px solid #e0e0e0;
+  background-color: #ffffff67;
+  // border-bottom: 1px solid #e0e0e0;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  position: absolute;
+  width: stretch;
+
 `;
 
 export const HeaderButtonsContainer = styled.div`
@@ -339,7 +343,7 @@ export const AdvancedSettingsButton = styled.button`
 
 export const MessagesContainer = styled.div`
   flex: 1;
-  padding: 20px;
+  padding: 200px 20px 20px 20px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
