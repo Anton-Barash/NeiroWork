@@ -37,10 +37,31 @@ function App() {
     // setCompany(newCompany); // Set the new company as current
   };
   const [chats, setChats] = useState([]);
-  const [currentChat, setCurrentChat] = useState(null);
+  const [currentChat, setCurrentChatState] = useState(null);
+  const [newMessage, setNewMessage] = useState('');
+  const [drafts, setDrafts] = useState({}); // { chatId: 'draft message' }
+
+  // Custom setCurrentChat that saves drafts
+  const setCurrentChat = (chat) => {
+    // Save current draft before switching
+    if (currentChat && newMessage.trim()) {
+      setDrafts(prev => ({
+        ...prev,
+        [currentChat.id]: newMessage
+      }));
+    }
+
+    setCurrentChatState(chat);
+
+    if (chat) {
+      // Load draft for the new chat
+      setNewMessage(drafts[chat.id] || '');
+    } else {
+      setNewMessage('');
+    }
+  };
   const [messages, setMessages] = useState([]);
   const [files, setFiles] = useState([]);
-  const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [newChatTopic, setNewChatTopic] = useState('');
@@ -296,6 +317,12 @@ function App() {
       setNewMessage('');
       setUploadedFiles([]);
       setUploadedImages([]);
+      // Clear the draft after sending
+      setDrafts(prev => {
+        const newDrafts = { ...prev };
+        delete newDrafts[currentChat.id];
+        return newDrafts;
+      });
       // Reset analysis since we have new messages
       setAnalysis(null);
       setNeiroWork(null);
@@ -337,7 +364,7 @@ function App() {
         chat.id === chatId ? { ...chat, topic: newTitle } : chat
       ));
       if (currentChat && currentChat.id === chatId) {
-        setCurrentChat({ ...currentChat, topic: newTitle });
+        setCurrentChatState({ ...currentChat, topic: newTitle });
         console.log('Current chat updated in state');
       }
     } catch (error) {
@@ -439,6 +466,7 @@ function App() {
             setShowNeiroWork={setShowNeiroWork}
             setShowCustomPromptSettings={setShowCustomPromptSettings}
             deleteChat={deleteChat}
+            drafts={drafts}
           />
 
           {/* Main Content */}

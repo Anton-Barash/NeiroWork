@@ -19,7 +19,8 @@ const Sidebar = React.memo(({
   setShowAnalysis,
   setShowNeiroWork,
   setShowCustomPromptSettings,
-  deleteChat
+  deleteChat,
+  drafts
 }) => {
   const [activeChatMenu, setActiveChatMenu] = useState(null);
 
@@ -76,8 +77,23 @@ const Sidebar = React.memo(({
                 setCurrentChat(chat);
                 setShowAnalysis(false);
                 setShowNeiroWork(false);
-              }} style={{ flex: 1 }}>
-                <h3>{chat.topic}</h3>
+              }} style={{ flex: 1, position: 'relative' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h3>{chat.topic}</h3>
+                  {drafts[chat.id] && (
+                    <span style={{
+                      fontSize: '10px',
+                      color: '#6c757d',
+                      fontStyle: 'italic',
+                      backgroundColor: '#f8f9fa',
+                      padding: '2px 6px',
+                      borderRadius: '10px',
+                      border: '1px solid #dee2e6'
+                    }}>
+                      draft
+                    </span>
+                  )}
+                </div>
                 <p>
                   {chat.message_count || 0} messages
                 </p>
