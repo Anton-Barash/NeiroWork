@@ -323,7 +323,20 @@ function App() {
     }
   };
 
-
+  const updateChat = async (chatId, newTitle) => {
+    if (!chatId) return;
+    try {
+      await chatService.updateChat(chatId, newTitle);
+      setChats(chats.map((chat) =>
+        chat.id === chatId ? { ...chat, topic: newTitle } : chat
+      ));
+      if (currentChat && currentChat.id === chatId) {
+        setCurrentChat({ ...currentChat, topic: newTitle });
+      }
+    } catch (error) {
+      console.error('Error updating chat:', error);
+    }
+  };
 
   const deleteFile = async (fileId) => {
     try {
@@ -433,6 +446,7 @@ function App() {
                     setShowChatMenu={setShowChatMenu}
                     setShowCustomPromptSettings={setShowCustomPromptSettings}
                     deleteChat={deleteChat}
+                    updateChat={updateChat}
                   />
 
                   {/* Analysis Display */}

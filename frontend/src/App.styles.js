@@ -244,13 +244,33 @@ export const ChatTitle = styled.div`
   border: 1px solid transparent;
   border-radius: 8px;
   transition: border-color 0.2s;
-  cursor: default;
+  cursor: pointer;
   align-self: flex-start;
-
+  max-width: calc(100% - 200px);
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  overflow: visible;
 
   &:hover {
     border-color: #ced4da;
   }
+`;
+
+export const ChatTitleEdit = styled.div`
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 16px 0 0;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 8px;
+  align-self: flex-start;
+  min-width: 100px;
+  max-width: calc(100% - 200px);
+  outline: none;
+  cursor: text;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  overflow: visible;
 `;
 
 export const AnalyzeButton = styled.button`

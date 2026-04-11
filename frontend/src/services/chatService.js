@@ -67,6 +67,19 @@ export const chatService = {
     }
   },
 
+  // Update chat title
+  updateChat: async (chatId, newTitle) => {
+    try {
+      await axios.put(`/api/chat/${chatId}`, {
+        topic: newTitle
+      });
+      return true;
+    } catch (error) {
+      console.error('Error updating chat:', error);
+      throw error;
+    }
+  },
+
   // Analyze a chat
   analyzeChat: async (chatId) => {
     try {
