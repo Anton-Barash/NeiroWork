@@ -26,11 +26,15 @@ const ChatHeader = React.memo(({ currentChat, analysisLoading, analyzeChat, show
   };
 
   const handleEditSave = () => {
+    console.log('handleEditSave called');
     if (titleRef.current && currentChat && updateChat) {
       const newTitle = titleRef.current.textContent.trim();
+      console.log('Saving chat title:', newTitle, 'for chat ID:', currentChat.id);
       if (newTitle) {
         updateChat(currentChat.id, newTitle);
       }
+    } else {
+      console.log('Missing required variables:', { titleRef: titleRef.current, currentChat, updateChat });
     }
     setIsEditing(false);
   };

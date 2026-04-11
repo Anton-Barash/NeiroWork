@@ -358,6 +358,23 @@ const chatRoutes = async (app: FastifyInstance) => {
       reply.status(500).send({ error: 'Failed' });
     }
   });
+
+  // Update chat title
+  app.put('/:chatId', async (request: FastifyRequest<{ Params: { chatId: string }; Body: { topic: string } }>, reply: FastifyReply) => {
+    try {
+      const { chatId } = request.params;
+      const { topic } = request.body;
+      const result = await pool.query(
+        'UPDATE chats SET topic = $1 WHERE id = $2 RETURNING id, topic',
+        [topic, chatId]
+      );
+      if (result.rows.length === 0) return reply.status(404).send({ error: 'Chat not found' });
+      reply.send({ success: true, chat: result.rows[0] });
+    } catch (error) {
+      console.error('Update chat title error:', error);
+      reply.status(500).send({ error: 'Failed to update chat title' });
+    }
+  });
 };
 
 export default chatRoutes;

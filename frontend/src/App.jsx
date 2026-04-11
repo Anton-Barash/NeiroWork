@@ -324,14 +324,21 @@ function App() {
   };
 
   const updateChat = async (chatId, newTitle) => {
-    if (!chatId) return;
+    console.log('updateChat called with:', { chatId, newTitle });
+    if (!chatId) {
+      console.log('No chatId provided');
+      return;
+    }
     try {
+      console.log('Calling chatService.updateChat');
       await chatService.updateChat(chatId, newTitle);
+      console.log('Chat updated successfully, updating state');
       setChats(chats.map((chat) =>
         chat.id === chatId ? { ...chat, topic: newTitle } : chat
       ));
       if (currentChat && currentChat.id === chatId) {
         setCurrentChat({ ...currentChat, topic: newTitle });
+        console.log('Current chat updated in state');
       }
     } catch (error) {
       console.error('Error updating chat:', error);
