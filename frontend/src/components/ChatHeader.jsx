@@ -5,7 +5,7 @@ const ChatHeader = React.memo(({ currentChat, analysisLoading, analyzeChat, show
   return (
     <S.ChatHeader>
       <S.ChatTitle>{currentChat.topic}</S.ChatTitle>
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', minWidth: '200px', height: 'stretch' }}>
         <S.HeaderButtonsContainer>
           <S.AnalyzeButton onClick={analyzeChat} disabled={analysisLoading}>
             {analysisLoading ? 'Analyzing...' : 'Analyze Dialog'}

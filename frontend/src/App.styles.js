@@ -236,11 +236,21 @@ export const HeaderButtonsContainer = styled.div`
   gap: 10px;
 `;
 
-export const ChatTitle = styled.h2`
+export const ChatTitle = styled.div`
   font-size: 18px;
   font-weight: 600;
-  margin: 0;
-  flex-grow: 1;
+  margin: 0 16px 0 0;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  transition: border-color 0.2s;
+  cursor: default;
+  align-self: flex-start;
+
+
+  &:hover {
+    border-color: #ced4da;
+  }
 `;
 
 export const AnalyzeButton = styled.button`
