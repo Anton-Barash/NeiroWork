@@ -37,14 +37,14 @@ const chatRoutes = async (app: FastifyInstance) => {
       const { company_id } = request.query;
       let query = 'SELECT id, topic, company_id, created_at FROM chats';
       const params = [];
-      
+
       if (company_id) {
         query += ' WHERE company_id = $1';
         params.push(company_id);
       }
-      
+
       query += ' ORDER BY created_at DESC';
-      
+
       const result = await pool.query(query, params);
       reply.send(result.rows);
     } catch (error) {
@@ -75,6 +75,7 @@ const chatRoutes = async (app: FastifyInstance) => {
     content: string;
     parent_id?: number;
     images?: Array<{ url: string }>;
+    user_id?: number;
   }
 
   app.post('/send', async (request: FastifyRequest<{ Body: SendMessageBody }>, reply: FastifyReply) => {
@@ -288,7 +289,7 @@ const chatRoutes = async (app: FastifyInstance) => {
       );
       const images = result.rows.map(row => ({
         ...row,
-        url: `${request.protocol}://${request.hostname}${request.port ? `:${request.port}` : ''}${row.filepath}`
+        url: `${request.protocol}://${request.hostname}${row.filepath}`
       }));
       reply.send(images);
     } catch (error) {

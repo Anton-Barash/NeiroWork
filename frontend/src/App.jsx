@@ -437,6 +437,8 @@ function App() {
             setCurrentChat={setCurrentChat}
             setShowAnalysis={setShowAnalysis}
             setShowNeiroWork={setShowNeiroWork}
+            setShowCustomPromptSettings={setShowCustomPromptSettings}
+            deleteChat={deleteChat}
           />
 
           {/* Main Content */}

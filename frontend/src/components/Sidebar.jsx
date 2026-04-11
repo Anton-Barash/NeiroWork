@@ -110,7 +110,7 @@ const Sidebar = React.memo(({
                       }}
                       style={{ color: '#dc3545' }}
                     >
-                      Удалить чат
+                      Delete
                     </S.DropdownItem>
                   </S.DropdownMenu>
                 )}

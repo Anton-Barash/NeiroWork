@@ -11,10 +11,10 @@ const filesRoutes = async (app: FastifyInstance) => {
   }
 
   // Upload file
-  app.post('/upload', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.post('/upload', async (request: FastifyRequest<{ Querystring: { chat_id: string } }>, reply: FastifyReply) => {
     try {
       const data = await request.file();
-      const chatId = request.query.chat_id as string;
+      const chatId = request.query.chat_id;
       
       if (!data || !chatId) {
         return reply.status(400).send({ error: 'File and chat_id are required' });
@@ -26,12 +26,13 @@ const filesRoutes = async (app: FastifyInstance) => {
       const filepath = path.join(uploadDir, filename);
 
       // Save file
-      await data.save(filepath);
+      const fileBuffer = await data.toBuffer();
+      fs.writeFileSync(filepath, fileBuffer);
 
       // Save file info to database
       const result = await pool.query(
         'INSERT INTO files (chat_id, filename, filepath, size, type) VALUES ($1, $2, $3, $4, $5) RETURNING id, filename, filepath, size, type, created_at',
-        [chatId, data.filename, `/uploads/${filename}`, data.file?.size || 0, data.mimetype]
+        [chatId, data.filename, `/uploads/${filename}`, fileBuffer.length, data.mimetype]
       );
 
       reply.send(result.rows[0]);

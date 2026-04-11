@@ -38,7 +38,7 @@ export const getChatCompletionWithPrompt = async (prompt: string, context: strin
 
     const response = await doubaoClient.chat.completions.create({
       model: process.env.DOUBAO_MODEL || DOUBAO_MODEL,
-      messages: messages,
+      messages: messages as any,
       temperature: 0.7,
       max_tokens: 1500,
     });
