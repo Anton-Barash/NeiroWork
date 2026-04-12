@@ -111,102 +111,102 @@ const Button = styled.button`
 `;
 
 function CompanySelectorModal({ isOpen, onClose, onCreateCompanyClick, onJoinCompanyClick }) {
-    const { user, company, setCompany } = useAuth();
-    const [companies, setCompanies] = React.useState([]);
-    const [loading, setLoading] = React.useState(false);
-    const [searchTerm, setSearchTerm] = React.useState('');
-    
-    // Filter companies based on search term
-    const filteredCompanies = companies.filter(companyData => 
-        companyData.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (companyData.description && companyData.description.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+  const { user, company, setCompany } = useAuth();
+  const [companies, setCompanies] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  const [searchTerm, setSearchTerm] = React.useState('');
 
-    React.useEffect(() => {
-        if (isOpen) {
-            fetchCompanies();
-        }
-    }, [isOpen]);
+  // Filter companies based on search term
+  const filteredCompanies = companies.filter(companyData =>
+    companyData.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (companyData.description && companyData.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
-    const fetchCompanies = async () => {
-        try {
-            setLoading(true);
-            const response = await axios.get('/api/companies');
-            setCompanies(response.data);
-        } catch (error) {
-            console.error('Error fetching companies:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+  React.useEffect(() => {
+    if (isOpen) {
+      fetchCompanies();
+    }
+  }, [isOpen]);
 
-    const selectCompany = async (companyData) => {
-        try {
-            setCompany(companyData);
-            onClose();
-        } catch (error) {
-            console.error('Error selecting company:', error);
-        }
-    };
+  const fetchCompanies = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('/api/companies');
+      setCompanies(response.data);
+    } catch (error) {
+      console.error('Error fetching companies:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    if (!isOpen) return null;
+  const selectCompany = async (companyData) => {
+    try {
+      setCompany(companyData);
+      onClose();
+    } catch (error) {
+      console.error('Error selecting company:', error);
+    }
+  };
 
-    return (
-        <ModalOverlay onClick={onClose}>
-            <ModalContent onClick={(e) => e.stopPropagation()}>
-                <ModalBody>
-                    <ModalTitle>Выбор компании</ModalTitle>
+  if (!isOpen) return null;
+
+  return (
+    <ModalOverlay onClick={onClose}>
+      <ModalContent onClick={(e) => e.stopPropagation()}>
+        <ModalBody>
+          <ModalTitle>Выбор компании</ModalTitle>
 
 
 
-                    <input
-                        type="text"
-                        placeholder="Search companies..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{
-                            width: '100%',
-                            padding: '8px 12px',
-                            border: '1px solid #dee2e6',
-                            borderRadius: '4px',
-                            fontSize: '14px',
-                            margin: '10px 0 20px 0',
-                            boxSizing: 'border-box'
-                        }}
-                    />
+          <input
+            type="text"
+            placeholder="Search companies..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '8px 12px',
+              border: '1px solid #dee2e6',
+              borderRadius: '4px',
+              fontSize: '14px',
+              margin: '10px 0 20px 0',
+              boxSizing: 'border-box'
+            }}
+          />
 
-                    {loading ? (
-                        <div style={{ textAlign: 'center', padding: '20px' }}>Загрузка компаний...</div>
-                    ) : (
-                        <CompanyList>
-                            {filteredCompanies.map((companyData) => (
-                                <CompanyItem
-                                    key={companyData.id}
-                                    onClick={() => selectCompany(companyData)}
-                                >
-                                    <CompanyName>{companyData.name}</CompanyName>
-                                    {companyData.description && <CompanyDescription>{companyData.description}</CompanyDescription>}
-                                </CompanyItem>
-                            ))}
-                        </CompanyList>
-                    )}
-                </ModalBody>
-                <ModalFooter>
-                    <ModalButtons>
-                        <Button onClick={onCreateCompanyClick} style={{ backgroundColor: '#28a745' }}>
-                            New Company
-                        </Button>
-                        <Button onClick={onJoinCompanyClick} style={{ backgroundColor: '#17a2b8' }}>
-                            Join Company
-                        </Button>
-                        <Button onClick={onClose} style={{ backgroundColor: '#6c757d' }}>
-                            Закрыть
-                        </Button>
-                    </ModalButtons>
-                </ModalFooter>
-            </ModalContent>
-        </ModalOverlay>
-    );
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '20px' }}>Загрузка компаний...</div>
+          ) : (
+            <CompanyList>
+              {filteredCompanies.map((companyData) => (
+                <CompanyItem
+                  key={companyData.id}
+                  onClick={() => selectCompany(companyData)}
+                >
+                  <CompanyName>{companyData.name}</CompanyName>
+                  {companyData.description && <CompanyDescription>{companyData.description}</CompanyDescription>}
+                </CompanyItem>
+              ))}
+            </CompanyList>
+          )}
+        </ModalBody>
+        <ModalFooter>
+          <ModalButtons>
+            <Button onClick={onCreateCompanyClick} style={{ backgroundColor: '#28a745' }}>
+              New Company
+            </Button>
+            <Button onClick={onJoinCompanyClick} style={{ backgroundColor: '#17a2b8' }}>
+              Join Company
+            </Button>
+            <Button onClick={onClose} style={{ backgroundColor: '#6c757d' }}>
+              Закрыть
+            </Button>
+          </ModalButtons>
+        </ModalFooter>
+      </ModalContent>
+    </ModalOverlay>
+  );
 }
 
 export default CompanySelectorModal;

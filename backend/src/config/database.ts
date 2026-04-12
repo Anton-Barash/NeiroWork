@@ -18,7 +18,6 @@ const pool = new Pool({
 export const connectDB = async () => {
   try {
     await pool.connect();
-    console.log('Connected to PostgreSQL database');
 
     // Create tables if they don't exist
     await createTables();
@@ -37,9 +36,8 @@ const createTables = async () => {
         FROM information_schema.columns
         WHERE table_name = 'companies'
       `);
-      console.log('Companies table structure:', tableInfo.rows);
     } catch (infoError) {
-      console.log('Could not check companies table structure:', infoError);
+      // Ignore errors
     }
 
     // Create users table
@@ -70,12 +68,13 @@ const createTables = async () => {
     // Create user_companies table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_companies (
-        id SERIAL PRIMARY KEY,
-        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-        company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
-        role VARCHAR(50) NOT NULL,
+        user_id INTEGER NOT NULL,
+        company_id INTEGER NOT NULL,
+        role VARCHAR(50) DEFAULT 'member',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, company_id)
+        PRIMARY KEY (user_id, company_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (company_id) REFERENCES companies(id) ON DELETE CASCADE
       )
     `);
 
@@ -199,17 +198,13 @@ const createTables = async () => {
       ON CONFLICT (user_id, company_id) DO NOTHING
     `);
 
-    console.log('Database tables created successfully');
-
     // Migration: Add user_id column if it doesn't exist
     try {
       await pool.query(`
         ALTER TABLE messages ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE SET NULL
       `);
-      console.log('Migration: user_id column added to messages table');
     } catch (migrationError) {
       // Ignore if column already exists or other error
-      console.log('Migration: user_id column already exists or migration skipped');
     }
   } catch (error) {
     console.error('Error creating tables:', error);

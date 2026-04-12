@@ -15,16 +15,14 @@ const authRoutes = async (app: FastifyInstance) => {
     app.get('/check', async (request: FastifyRequest, reply: FastifyReply) => {
         try {
             const token = request.headers.authorization?.replace('Bearer ', '');
-            console.log('Auth check attempt:', { token: token ? 'present' : 'missing' });
+            const lastCompanyId = request.headers['x-last-company-id'];
 
             if (!token) {
-                console.log('Auth check failed: No token provided');
                 return reply.send({ authenticated: false });
             }
 
             try {
                 const decoded = jwt.verify(token, JWT_SECRET) as any;
-                console.log('Auth check: Token decoded successfully', { userId: decoded.userId, username: decoded.username });
 
                 // Get user details
                 const userResult = await pool.query(
@@ -33,21 +31,34 @@ const authRoutes = async (app: FastifyInstance) => {
                 );
 
                 if (userResult.rows.length === 0) {
-                    console.log('Auth check failed: User not found', { userId: decoded.userId });
                     return reply.send({ authenticated: false });
                 }
 
-                // Get default company for user
-                const companyResult = await pool.query(
-                    'SELECT c.id, c.name, c.description FROM companies c LIMIT 1',
-                    []
-                );
+                // Get all companies for the user from user_companies table
+                const companiesResult = await pool.query(`
+                    SELECT c.id, c.name, c.description
+                    FROM companies c
+                    INNER JOIN user_companies uc ON c.id = uc.company_id
+                    WHERE uc.user_id = $1
+                    ORDER BY c.id
+                `, [decoded.userId]);
 
-                console.log('Auth check successful:', { userId: userResult.rows[0].id, username: userResult.rows[0].username });
+                // Use lastCompanyId if provided and exists in user's companies
+                let company = null;
+                if (lastCompanyId && companiesResult.rows.length > 0) {
+                    company = companiesResult.rows.find(c => c.id == lastCompanyId);
+                }
+
+                // If no valid lastCompanyId, use first company
+                if (!company && companiesResult.rows.length > 0) {
+                    company = companiesResult.rows[0];
+                }
+
                 reply.send({
                     authenticated: true,
                     user: userResult.rows[0],
-                    company: companyResult.rows[0] || null
+                    company: company,
+                    companies: companiesResult.rows
                 });
             } catch (error) {
                 console.error('Token verification failed:', error);
@@ -63,10 +74,8 @@ const authRoutes = async (app: FastifyInstance) => {
     app.post('/login', async (request: FastifyRequest<{ Body: LoginRequest }>, reply: FastifyReply) => {
         try {
             const { username, password } = request.body;
-            console.log('Login attempt:', { username });
 
             if (!username || !password) {
-                console.log('Login failed: Missing username or password', { username: username ? username : 'missing', password: password ? 'provided' : 'missing' });
                 return reply.status(400).send({ error: 'Username and password are required' });
             }
 
@@ -77,7 +86,6 @@ const authRoutes = async (app: FastifyInstance) => {
             );
 
             if (userResult.rows.length === 0) {
-                console.log('Login failed: User not found', { username });
                 return reply.status(401).send({ error: 'Invalid username or password' });
             }
 
@@ -85,7 +93,6 @@ const authRoutes = async (app: FastifyInstance) => {
 
             // Verify password (for now, just compare directly since we're not using bcrypt)
             if (user.password !== password) {
-                console.log('Login failed: Invalid password', { username });
                 return reply.status(401).send({ error: 'Invalid username or password' });
             }
 
@@ -102,7 +109,6 @@ const authRoutes = async (app: FastifyInstance) => {
                 { expiresIn: '7d' }
             );
 
-            console.log('Login successful:', { userId: user.id, username: user.username });
             reply.send({
                 success: true,
                 token,
@@ -123,11 +129,9 @@ const authRoutes = async (app: FastifyInstance) => {
     app.post('/logout', async (request: FastifyRequest, reply: FastifyReply) => {
         try {
             const token = request.headers.authorization?.replace('Bearer ', '');
-            console.log('Logout attempt:', { token: token ? 'present' : 'missing' });
 
             // For session-based auth, we would clear the session here
             // For JWT-based auth, the client just needs to remove the token
-            console.log('Logout successful');
             reply.send({ success: true });
         } catch (error) {
             console.error('Logout error:', error);

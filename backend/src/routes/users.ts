@@ -60,12 +60,31 @@ const userRoutes = async (app: FastifyInstance) => {
         }
     });
 
-    // Get all companies
+    // Get all companies for current user
     app.get('/companies', async (request: FastifyRequest, reply: FastifyReply) => {
         try {
-            const result = await pool.query('SELECT id, name, description, created_at FROM companies ORDER BY created_at DESC');
+            const token = request.headers.authorization?.replace('Bearer ', '');
+
+            if (!token) {
+                return reply.status(401).send({ error: 'Unauthorized' });
+            }
+
+            const jwt = require('jsonwebtoken');
+            const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+            const decoded = jwt.verify(token, JWT_SECRET);
+
+            // Get companies from user_companies table
+            const result = await pool.query(`
+                SELECT c.id, c.name, c.description, c.created_at, uc.role
+                FROM companies c
+                INNER JOIN user_companies uc ON c.id = uc.company_id
+                WHERE uc.user_id = $1
+                ORDER BY c.created_at DESC
+            `, [decoded.userId]);
+
             reply.send(result.rows);
         } catch (error) {
+            console.error('Error fetching companies:', error);
             reply.status(500).send({ error: 'Failed to get companies' });
         }
     });

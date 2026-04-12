@@ -134,7 +134,11 @@ export const chatService = {
       return response.data;
     } catch (error) {
       console.error('Error fetching prompt settings:', error);
-      throw error;
+      // Return default values if endpoint doesn't exist (404)
+      return {
+        dialog_analysis_prompt: '',
+        neirowork_prompt: ''
+      };
     }
   },
 

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-// Set up axios interceptor to add auth token to requests
+// Interceptor для токена — оставляем
 axios.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('authToken');
@@ -10,9 +10,7 @@ axios.interceptors.request.use(
         }
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
 const AuthContext = createContext(null);
@@ -31,12 +29,12 @@ export function AuthProvider({ children }) {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    // Custom setCompany that saves to localStorage
-    const setCompany = (newCompany) => {
+    // Кастомный setCompany — ОК
+    const setCompany = (newCompany, saveToStorage = true) => {
         setCompanyState(newCompany);
-        if (newCompany) {
+        if (newCompany && saveToStorage) {
             localStorage.setItem('lastCompanyId', newCompany.id);
-        } else {
+        } else if (!newCompany) {
             localStorage.removeItem('lastCompanyId');
         }
     };
@@ -47,59 +45,54 @@ export function AuthProvider({ children }) {
 
     const checkAuth = async () => {
         try {
-            console.log('Starting auth check');
-            
-            // Check what's in localStorage
+            setLoading(true);
             const savedCompanyId = localStorage.getItem('lastCompanyId');
-            console.log('Saved company ID in localStorage:', savedCompanyId);
-            
-            const response = await axios.get('/api/auth/check');
-            console.log('Auth check response:', response.data);
-            
-            if (response.data.authenticated) {
-                console.log('Auth check successful, setting isAuthenticated to true');
-                setUser(response.data.user);
-                
-                let companyToSet = response.data.company;
-                console.log('Initial company from API:', companyToSet);
-                
-                // If we have a saved company ID, try to find it in the companies list
-                if (savedCompanyId) {
-                    console.log('Found saved company ID:', savedCompanyId);
-                    
-                    if (response.data.companies) {
-                        console.log('Companies list available:', response.data.companies);
-                        const savedCompany = response.data.companies.find(c => c.id == savedCompanyId);
-                        if (savedCompany) {
-                            companyToSet = savedCompany;
-                            console.log('Loaded saved company from localStorage:', savedCompany.name);
-                        } else {
-                            console.log('Saved company not found in companies list');
-                        }
-                    } else {
-                        console.log('Companies list not available in API response');
-                        // If companies list is not available, we'll create a company object with just the ID
-                        if (companyToSet && companyToSet.id != savedCompanyId) {
-                            console.log('Creating company object with saved ID:', savedCompanyId);
-                            companyToSet = { id: savedCompanyId, name: 'Loading...' };
-                        }
-                    }
-                } else {
-                    console.log('No saved company ID found in localStorage');
+
+            // Чистка старых данных
+            localStorage.removeItem('lastCompanyName');
+            localStorage.removeItem('lastCompanyDescription');
+
+            // Очистка битых ID
+            if (savedCompanyId === 'undefined' || savedCompanyId === 'null') {
+                localStorage.removeItem('lastCompanyId');
+                localStorage.removeItem(`lastChatId_${savedCompanyId}`);
+            }
+
+            // Передаем lastCompanyId в заголовке
+            const response = await axios.get('/api/auth/check', {
+                headers: {
+                    'X-Last-Company-Id': savedCompanyId || ''
                 }
-                
-                console.log('Final company to set:', companyToSet);
-                setCompanyState(companyToSet);
+            });
+
+            if (response.data.authenticated) {
+                console.log("data is", response.data);
+                setUser(response.data.user);
+                let companyToSet = response.data.company;
+
+                // Поиск сохраненной компании
+                if (savedCompanyId && response.data.companies) {
+                    const savedCompany = response.data.companies.find(c => c.id === savedCompanyId);
+                    if (savedCompany) companyToSet = savedCompany;
+                }
+
+                setCompany(companyToSet, false);
                 setIsAuthenticated(true);
             } else {
-                console.log('Auth check failed, setting isAuthenticated to false');
+                // ❗ Исправлено: полный сброс при неавторизованном
+                console.log('User not authenticated, resetting state');
+                setUser(null);
+                setCompany(null);
                 setIsAuthenticated(false);
             }
         } catch (error) {
             console.error('Auth check error:', error);
+            // ❗ Исправлено: полный сброс при ошибке auth check
+            console.log('Auth check error, resetting state');
+            setUser(null);
+            setCompany(null);
             setIsAuthenticated(false);
         } finally {
-            console.log('Auth check completed, setting loading to false');
             setLoading(false);
         }
     };
@@ -107,16 +100,19 @@ export function AuthProvider({ children }) {
     const login = async (username, password) => {
         try {
             const response = await axios.post('/api/auth/login', { username, password });
+
+            if (response.data.token) {
+                localStorage.setItem('authToken', response.data.token);
+            }
+
             if (response.data.user) {
-                // Store token in localStorage
-                if (response.data.token) {
-                    localStorage.setItem('authToken', response.data.token);
-                }
+                // ❗ Исправлено: используем setCompany вместо setCompanyState
                 setUser(response.data.user);
-                setCompanyState(response.data.company);
+                setCompany(response.data.company);
                 setIsAuthenticated(true);
                 return { success: true };
             }
+
             return { success: false, error: response.data.error };
         } catch (error) {
             console.error('Login failed:', error);
@@ -127,22 +123,21 @@ export function AuthProvider({ children }) {
     const logout = async () => {
         try {
             await axios.post('/api/auth/logout');
-            // Remove token and saved state from localStorage
+        } catch (error) {
+            console.error('Logout API error:', error);
+        } finally {
+            // ❗ Исправлено: чистка localStorage и состояния в любом случае
             localStorage.removeItem('authToken');
             localStorage.removeItem('lastCompanyId');
 
-            // Clear all company-specific chat IDs
-            for (let key in localStorage) {
-                if (key.startsWith('lastChatId_')) {
-                    localStorage.removeItem(key);
-                }
-            }
+            // Очистка всех чатов
+            Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('lastChatId_')) localStorage.removeItem(key);
+            });
 
             setUser(null);
-            setCompanyState(null);
+            setCompany(null);
             setIsAuthenticated(false);
-        } catch (error) {
-            console.error('Logout failed:', error);
         }
     };
 
@@ -156,7 +151,7 @@ export function AuthProvider({ children }) {
         logout,
         checkAuth
     };
-
+    console.log('AuthContext value:', value);
     return (
         <AuthContext.Provider value={value}>
             {children}

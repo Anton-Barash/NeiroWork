@@ -91,7 +91,7 @@ const Sidebar = React.memo(({
                 setShowNeiroWork(false);
               }} style={{ flex: 1, position: 'relative', padding: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <h3 style={{ fontSize: '14px', margin: 0 }}>{chat.topic}</h3>
+                  <h3 style={{ fontSize: '14px', margin: 0, color: '#495057' }}>{chat.topic}</h3>
                   {drafts[chat.id] && (
                     <span style={{
                       fontSize: '9px',

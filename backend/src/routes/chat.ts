@@ -56,12 +56,10 @@ const chatRoutes = async (app: FastifyInstance) => {
   app.get('/:chatId/chat-messages', async (request: FastifyRequest<{ Params: { chatId: string } }>, reply: FastifyReply) => {
     try {
       const { chatId } = request.params;
-      console.log('[GET /:chatId/messages] Fetching messages for chat:', chatId);
       const result = await pool.query(
         'SELECT m.id, m.parent_id, m.user_id, m.content, m.role, m.created_at, u.username FROM messages m LEFT JOIN users u ON m.user_id = u.id WHERE m.chat_id = $1 ORDER BY m.created_at ASC',
         [chatId]
       );
-      console.log('[GET /:chatId/messages] Found messages:', result.rows.length);
       reply.send(result.rows);
     } catch (error) {
       console.error('[GET /:chatId/messages] Error:', error);
@@ -270,7 +268,6 @@ const chatRoutes = async (app: FastifyInstance) => {
         reply.send({ analysis: null, has_new_messages: true });
         return;
       }
-      console.log(result.rows[0]);
       reply.send(result.rows[0]);
 
     } catch (error) {

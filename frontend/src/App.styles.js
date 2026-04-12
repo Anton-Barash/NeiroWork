@@ -9,7 +9,7 @@ export const AppContainer = styled.div`
 `;
 
 export const Sidebar = styled.div`
-  width: 300px;
+  width: 250px;
   background-color: #fff;
   border-right: 1px solid #e0e0e0;
   display: flex;
@@ -66,6 +66,7 @@ export const UserMenuButton = styled.button`
 export const SidebarTopRow = styled.div`
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
 `;
@@ -254,6 +255,7 @@ export const HeaderButtonsContainer = styled.div`
 export const ChatTitle = styled.div`
   font-size: 18px;
   font-weight: 600;
+  color: #495057;
   margin: 0 16px 0 0;
   padding: 8px 12px;
   border: 1px solid transparent;

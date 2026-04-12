@@ -50,9 +50,9 @@ function App() {
 
   // Handle company creation
   const handleCompanyCreated = (newCompany) => {
-    console.log('Company created:', newCompany);
-    // TODO: Update company context or refresh company list
-    // setCompany(newCompany); // Set the new company as current
+    setCompany(newCompany);
+    setShowCreateCompany(false);
+    setShowCompanySelector(false);
   };
   const [chats, setChats] = useState([]);
   const [currentChat, setCurrentChatState] = useState(null);
@@ -135,41 +135,26 @@ function App() {
 
   // Show login modal if not authenticated
   useEffect(() => {
-    console.log('Auth state:', { authLoading, isAuthenticated, showLoginModal });
-    if (!authLoading && !isAuthenticated) {
-      console.log('Setting showLoginModal to true');
-      setShowLoginModal(true);
-    } else {
-      console.log('Setting showLoginModal to false');
-      setShowLoginModal(false);
+    if (!authLoading) {
+      setShowLoginModal(!isAuthenticated);
     }
   }, [authLoading, isAuthenticated]);
 
   // Fetch chats when company changes
   useEffect(() => {
-    console.log('Company changed:', company);
     if (company) {
-      console.log('Fetching chats for company:', company.id, company.name);
       fetchChats().then((fetchedChats) => {
-        console.log('Fetched chats:', fetchedChats);
         // Load saved chat from localStorage after fetching chats
         const savedChatId = localStorage.getItem(`lastChatId_${company.id}`);
-        console.log('Saved chat ID for company', company.id, ':', savedChatId);
         if (savedChatId) {
           const savedChat = fetchedChats.find(chat => chat.id == savedChatId);
           if (savedChat) {
-            console.log('Loading saved chat:', savedChat.topic);
             setCurrentChat(savedChat);
-          } else {
-            console.log('Saved chat not found in fetched chats');
           }
-        } else {
-          console.log('No saved chat ID found for company', company.id);
         }
       });
     } else {
       // Clear chats and current chat if no company is selected
-      console.log('No company selected, clearing chats');
       setChats([]);
       setCurrentChat(null);
     }
@@ -314,7 +299,6 @@ function App() {
   const fetchGlobalPrompts = async () => {
     try {
       const response = await axios.get('/api/prompts');
-      console.log('API /api/prompts response:', response.data);
     } catch (error) {
       console.error('Error fetching global prompts:', error);
     }
