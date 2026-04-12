@@ -23,6 +23,12 @@ const Sidebar = React.memo(({
   drafts
 }) => {
   const [activeChatMenu, setActiveChatMenu] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Filter chats based on search term
+  const filteredChats = chats.filter(chat =>
+    chat.topic.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   // Close chat menu when clicking outside
   React.useEffect(() => {
@@ -65,10 +71,16 @@ const Sidebar = React.memo(({
         <S.NewChatButton onClick={() => setShowModal(true)}>
           + New Chat
         </S.NewChatButton>
+        <S.SearchInput
+          type="text"
+          placeholder="Search chats..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </S.SidebarHeader>
       <S.ChatList>
         {
-          chats.map((chat) => (
+          filteredChats.map((chat) => (
             <S.ChatItemWithMenu
               key={chat.id}
               active={currentChat?.id === chat.id}

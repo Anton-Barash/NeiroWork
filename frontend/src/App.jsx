@@ -59,7 +59,7 @@ function App() {
   const [newMessage, setNewMessage] = useState('');
   const [drafts, setDrafts] = useState({}); // { chatId: 'draft message' }
 
-  // Custom setCurrentChat that saves drafts
+  // Custom setCurrentChat that saves drafts and chat state
   const setCurrentChat = (chat) => {
     // Save current draft before switching
     if (currentChat && newMessage.trim()) {
@@ -71,11 +71,17 @@ function App() {
 
     setCurrentChatState(chat);
 
-    if (chat) {
+    if (chat && company) {
       // Load draft for the new chat
       setNewMessage(drafts[chat.id] || '');
+      // Save current chat to localStorage with company context
+      localStorage.setItem(`lastChatId_${company.id}`, chat.id);
     } else {
       setNewMessage('');
+      // Clear chat from localStorage if no chat is selected
+      if (company) {
+        localStorage.removeItem(`lastChatId_${company.id}`);
+      }
     }
   };
   const [messages, setMessages] = useState([]);
@@ -141,7 +147,32 @@ function App() {
 
   // Fetch chats when company changes
   useEffect(() => {
-    fetchChats();
+    console.log('Company changed:', company);
+    if (company) {
+      console.log('Fetching chats for company:', company.id, company.name);
+      fetchChats().then((fetchedChats) => {
+        console.log('Fetched chats:', fetchedChats);
+        // Load saved chat from localStorage after fetching chats
+        const savedChatId = localStorage.getItem(`lastChatId_${company.id}`);
+        console.log('Saved chat ID for company', company.id, ':', savedChatId);
+        if (savedChatId) {
+          const savedChat = fetchedChats.find(chat => chat.id == savedChatId);
+          if (savedChat) {
+            console.log('Loading saved chat:', savedChat.topic);
+            setCurrentChat(savedChat);
+          } else {
+            console.log('Saved chat not found in fetched chats');
+          }
+        } else {
+          console.log('No saved chat ID found for company', company.id);
+        }
+      });
+    } else {
+      // Clear chats and current chat if no company is selected
+      console.log('No company selected, clearing chats');
+      setChats([]);
+      setCurrentChat(null);
+    }
   }, [company]);
 
   // Fetch messages when current chat changes
@@ -200,8 +231,10 @@ function App() {
     try {
       const chats = await chatService.getChats(company?.id);
       setChats(chats);
+      return chats; // Return the fetched chats
     } catch (error) {
       console.error('Error fetching chats:', error);
+      return [];
     }
   };
 

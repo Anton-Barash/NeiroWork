@@ -114,6 +114,13 @@ function CompanySelectorModal({ isOpen, onClose, onCreateCompanyClick, onJoinCom
     const { user, company, setCompany } = useAuth();
     const [companies, setCompanies] = React.useState([]);
     const [loading, setLoading] = React.useState(false);
+    const [searchTerm, setSearchTerm] = React.useState('');
+    
+    // Filter companies based on search term
+    const filteredCompanies = companies.filter(companyData => 
+        companyData.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (companyData.description && companyData.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
 
     React.useEffect(() => {
         if (isOpen) {
@@ -157,11 +164,27 @@ function CompanySelectorModal({ isOpen, onClose, onCreateCompanyClick, onJoinCom
                         </CurrentCompany>
                     )}
 
+                    <input
+                        type="text"
+                        placeholder="Search companies..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            border: '1px solid #dee2e6',
+                            borderRadius: '4px',
+                            fontSize: '14px',
+                            margin: '10px 0 20px 0',
+                            boxSizing: 'border-box'
+                        }}
+                    />
+
                     {loading ? (
                         <div style={{ textAlign: 'center', padding: '20px' }}>Загрузка компаний...</div>
                     ) : (
                         <CompanyList>
-                            {companies.map((companyData) => (
+                            {filteredCompanies.map((companyData) => (
                                 <CompanyItem
                                     key={companyData.id}
                                     onClick={() => selectCompany(companyData)}
