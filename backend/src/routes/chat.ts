@@ -58,7 +58,7 @@ const chatRoutes = async (app: FastifyInstance) => {
       const { chatId } = request.params;
       console.log('[GET /:chatId/messages] Fetching messages for chat:', chatId);
       const result = await pool.query(
-        'SELECT id, parent_id, user_id, content, role, created_at FROM messages WHERE chat_id = $1 ORDER BY created_at ASC',
+        'SELECT m.id, m.parent_id, m.user_id, m.content, m.role, m.created_at, u.username FROM messages m LEFT JOIN users u ON m.user_id = u.id WHERE m.chat_id = $1 ORDER BY m.created_at ASC',
         [chatId]
       );
       console.log('[GET /:chatId/messages] Found messages:', result.rows.length);
@@ -199,7 +199,7 @@ const chatRoutes = async (app: FastifyInstance) => {
       }
 
       const messagesResult = await pool.query(
-        'SELECT role, content FROM messages WHERE chat_id = $1 ORDER BY created_at ASC',
+        'SELECT m.role, m.content, u.username FROM messages m LEFT JOIN users u ON m.user_id = u.id WHERE m.chat_id = $1 ORDER BY m.created_at ASC',
         [chatId]
       );
 
@@ -235,7 +235,7 @@ const chatRoutes = async (app: FastifyInstance) => {
         prompt += `\n\nAdditional instructions: ${chatCustomPromptResult.rows[0].custom_prompt}`;
       }
 
-      const context = messagesResult.rows.map(msg => `${msg.role}: ${msg.content}`).join('\n');
+      const context = messagesResult.rows.map(msg => `${msg.username || msg.role}: ${msg.content}`).join('\n');
 
       const analysis = await getChatCompletionWithPrompt(prompt, context);
 

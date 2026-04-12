@@ -49,7 +49,7 @@ const MessagesList = ({ messages, user, isLoading, formatTime }) => {
             content = message.content;
           }
 
-          const senderName = message.role === 'user' ? (user?.username || 'User') : 'AI Assistant';
+          const senderName = message.username || (message.role === 'user' ? (user?.username || 'User') : 'AI Assistant');
           const avatarInitial = senderName.charAt(0).toUpperCase();
 
           return (
