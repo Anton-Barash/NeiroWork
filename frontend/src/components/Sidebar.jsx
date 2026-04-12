@@ -89,27 +89,27 @@ const Sidebar = React.memo(({
                 setCurrentChat(chat);
                 setShowAnalysis(false);
                 setShowNeiroWork(false);
-              }} style={{ flex: 1, position: 'relative' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <h3>{chat.topic}</h3>
+              }} style={{ flex: 1, position: 'relative', padding: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <h3 style={{ fontSize: '14px', margin: 0 }}>{chat.topic}</h3>
                   {drafts[chat.id] && (
                     <span style={{
-                      fontSize: '10px',
+                      fontSize: '9px',
                       color: '#6c757d',
                       fontStyle: 'italic',
                       backgroundColor: '#f8f9fa',
-                      padding: '2px 6px',
-                      borderRadius: '10px',
+                      padding: '1px 4px',
+                      borderRadius: '8px',
                       border: '1px solid #dee2e6'
                     }}>
                       draft
                     </span>
                   )}
                 </div>
-                <p>
+                <p style={{ fontSize: '12px', margin: '4px 0 0 0' }}>
                   {chat.message_count || 0} messages
                 </p>
-                <small>{new Date(chat.created_at).toLocaleDateString()}</small>
+                <small style={{ fontSize: '10px' }}>{new Date(chat.created_at).toLocaleDateString()}</small>
               </div>
               <div style={{ position: 'relative' }}>
                 <S.ChatItemMenuButton

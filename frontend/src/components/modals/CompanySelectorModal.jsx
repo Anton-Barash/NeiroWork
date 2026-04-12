@@ -157,12 +157,7 @@ function CompanySelectorModal({ isOpen, onClose, onCreateCompanyClick, onJoinCom
                 <ModalBody>
                     <ModalTitle>Выбор компании</ModalTitle>
 
-                    {company && (
-                        <CurrentCompany>
-                            <CompanyName>Текущая компания: {company.name}</CompanyName>
-                            {company.description && <CompanyDescription>{company.description}</CompanyDescription>}
-                        </CurrentCompany>
-                    )}
+
 
                     <input
                         type="text"
