@@ -824,8 +824,8 @@ export const RemoveFileButton = styled.button`
 
 export const InputArea = styled.div`
   padding: 20px;
-  background-color: #fff;
-  border-top: 1px solid #e0e0e0;
+  background-color: transparent;
+  border-top: 1px solid rgba(224, 224, 224, 0.3);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -845,19 +845,20 @@ export const InputContainer = styled.div`
 
 export const MessageInput = styled.textarea`
   flex: 1;
-  padding: 15px;
-  border: 1px solid #e0e0e0;
+  width: -webkit-fill-available;
+  width: fill-available;
+  padding: 15px 80px 15px 15px;
+  border: none;
   border-radius: 24px;
   resize: none;
   font-size: 14px;
   min-height: 48px;
   max-height: 120px;
   font-family: inherit;
+  background-color: transparent;
 
   &:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
   }
 `;
 
@@ -865,15 +866,15 @@ export const SendButton = styled.button`
   background-color: #007bff;
   color: white;
   border: none;
-  border-radius: 50%;
-  width: 48px;
-  height: 48px;
+  border-radius: 20px;
+  padding: 6px 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 14px;
   transition: background-color 0.2s;
+  white-space: nowrap;
 
   &:hover:not(:disabled) {
     background-color: #0069d9;

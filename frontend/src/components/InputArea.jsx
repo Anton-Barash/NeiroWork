@@ -75,20 +75,51 @@ const InputArea = memo(({
               style={{ display: 'none' }}
             />
           </label>
-          <S.MessageInput
-            placeholder="Type your message..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) =>
-              e.key === 'Enter' && !e.shiftKey && sendMessage()
+          <div style={{
+            position: 'relative', 
+            flex: 1,
+            width: '100%',
+            maxWidth: '100%',
+            border: '1px solid #e0e0e0',
+            borderRadius: '24px',
+            backgroundColor: '#fff',
+            transition: 'all 0.2s'
+          }} tabIndex="-1" onFocus={() => {
+            const el = document.activeElement;
+            if (el && el.closest('div[style*="position: relative"]')) {
+              el.closest('div[style*="position: relative"]').style.borderColor = '#007bff';
+              el.closest('div[style*="position: relative"]').style.boxShadow = '0 0 0 2px rgba(0, 123, 255, 0.25)';
             }
-          />
-          <S.SendButton
-            onClick={sendMessage}
-            disabled={(!newMessage.trim() && uploadedImages.length === 0) || isLoading}
-          >
-            Send
-          </S.SendButton>
+          }} onBlur={() => {
+            const el = document.activeElement;
+            if (!el || !el.closest('div[style*="position: relative"]')) {
+              const divs = document.querySelectorAll('div[style*="position: relative"]');
+              divs.forEach(div => {
+                div.style.borderColor = '#e0e0e0';
+                div.style.boxShadow = 'none';
+              });
+            }
+          }}>
+            <S.MessageInput
+              placeholder="Type your message..."
+              value={newMessage}
+              onChange={(e) => setNewMessage(e.target.value)}
+              onKeyPress={(e) =>
+                e.key === 'Enter' && !e.shiftKey && sendMessage()
+              }
+            />
+            <S.SendButton
+              style={{
+                position: 'absolute',
+                right: '8px',
+                bottom: '8px'
+              }}
+              onClick={sendMessage}
+              disabled={(!newMessage.trim() && uploadedImages.length === 0) || isLoading}
+            >
+              Send
+            </S.SendButton>
+          </div>
         </div>
       </S.InputContainer>
     </S.InputArea>

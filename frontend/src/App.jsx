@@ -517,19 +517,6 @@ function App() {
                     updateChat={updateChat}
                   />
 
-                  {/* Analysis Display */}
-                  {showAnalysis && analysis && (
-                    <S.AnalysisContainer>
-                      <S.AnalysisHeader>
-                        <S.AnalysisTitle>Dialog Analysis</S.AnalysisTitle>
-                        <S.CloseButton onClick={() => setShowAnalysis(false)}>×</S.CloseButton>
-                      </S.AnalysisHeader>
-                      <S.AnalysisContent>
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysis}</ReactMarkdown>
-                      </S.AnalysisContent>
-                    </S.AnalysisContainer>
-                  )}
-
                   {/* Messages */}
                   <MessagesList
                     messages={messages}
@@ -557,6 +544,19 @@ function App() {
                     removeImage={removeImage}
                     formatFileSize={formatFileSize}
                   />
+
+                  {/* Analysis Display */}
+                  {showAnalysis && analysis && (
+                    <S.AnalysisContainer>
+                      <S.AnalysisHeader>
+                        <S.AnalysisTitle>Dialog Analysis</S.AnalysisTitle>
+                        <S.CloseButton onClick={() => setShowAnalysis(false)}>×</S.CloseButton>
+                      </S.AnalysisHeader>
+                      <S.AnalysisContent>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{analysis}</ReactMarkdown>
+                      </S.AnalysisContent>
+                    </S.AnalysisContainer>
+                  )}
                 </>
               ) : (
                 <S.EmptyState>
