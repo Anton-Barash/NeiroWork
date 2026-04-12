@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { memo } from 'react';
 import * as S from '../App.styles';
 
-const InputArea = ({ 
+const InputArea = memo(({ 
   newMessage, 
   setNewMessage, 
   uploadedFiles, 
@@ -93,6 +93,6 @@ const InputArea = ({
       </S.InputContainer>
     </S.InputArea>
   );
-};
+});
 
 export default InputArea;

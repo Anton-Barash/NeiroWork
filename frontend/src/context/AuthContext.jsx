@@ -66,7 +66,6 @@ export function AuthProvider({ children }) {
             });
 
             if (response.data.authenticated) {
-                console.log("data is", response.data);
                 setUser(response.data.user);
                 let companyToSet = response.data.company;
 
@@ -79,16 +78,12 @@ export function AuthProvider({ children }) {
                 setCompany(companyToSet, false);
                 setIsAuthenticated(true);
             } else {
-                // ❗ Исправлено: полный сброс при неавторизованном
-                console.log('User not authenticated, resetting state');
                 setUser(null);
                 setCompany(null);
                 setIsAuthenticated(false);
             }
         } catch (error) {
             console.error('Auth check error:', error);
-            // ❗ Исправлено: полный сброс при ошибке auth check
-            console.log('Auth check error, resetting state');
             setUser(null);
             setCompany(null);
             setIsAuthenticated(false);
@@ -151,7 +146,6 @@ export function AuthProvider({ children }) {
         logout,
         checkAuth
     };
-    console.log('AuthContext value:', value);
     return (
         <AuthContext.Provider value={value}>
             {children}

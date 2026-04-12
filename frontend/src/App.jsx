@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -371,7 +371,7 @@ function App() {
     }
   };
 
-  const deleteChat = async () => {
+  const deleteChat = useCallback(async () => {
     if (!currentChat) return;
     try {
       await chatService.deleteChat(currentChat.id);
@@ -384,40 +384,35 @@ function App() {
     } catch (error) {
       console.error('Error deleting chat:', error);
     }
-  };
+  }, [currentChat, chats]);
 
-  const updateChat = async (chatId, newTitle) => {
-    console.log('updateChat called with:', { chatId, newTitle });
+  const updateChat = useCallback(async (chatId, newTitle) => {
     if (!chatId) {
-      console.log('No chatId provided');
       return;
     }
     try {
-      console.log('Calling chatService.updateChat');
       await chatService.updateChat(chatId, newTitle);
-      console.log('Chat updated successfully, updating state');
       setChats(chats.map((chat) =>
         chat.id === chatId ? { ...chat, topic: newTitle } : chat
       ));
       if (currentChat && currentChat.id === chatId) {
         setCurrentChatState({ ...currentChat, topic: newTitle });
-        console.log('Current chat updated in state');
       }
     } catch (error) {
       console.error('Error updating chat:', error);
     }
-  };
+  }, [currentChat, chats]);
 
-  const deleteFile = async (fileId) => {
+  const deleteFile = useCallback(async (fileId) => {
     try {
       await fileService.deleteFile(fileId);
       setFiles(files.filter((file) => file.id !== fileId));
     } catch (error) {
       console.error('Error deleting file:', error);
     }
-  };
+  }, [files]);
 
-  const handleImageUpload = async (e) => {
+  const handleImageUpload = useCallback(async (e) => {
     if (!currentChat || !e.target.files) return;
 
     const file = e.target.files[0];
@@ -434,11 +429,11 @@ function App() {
     } catch (error) {
       console.error('Error uploading image:', error);
     }
-  };
+  }, [currentChat, uploadedImages]);
 
-  const removeImage = (imageId) => {
+  const removeImage = useCallback((imageId) => {
     setUploadedImages(uploadedImages.filter(img => img.id !== imageId));
-  };
+  }, [uploadedImages]);
 
   const analyzeChat = async () => {
     if (!currentChat) return;
@@ -646,7 +641,6 @@ function App() {
           isOpen={showJoinCompany}
           onClose={() => setShowJoinCompany(false)}
           onCompanyJoined={(company) => {
-            console.log('Company joined:', company);
             // TODO: Update company list
           }}
         />

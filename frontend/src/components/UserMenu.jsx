@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import styled from '@emotion/styled';
 import { useAuth } from '../context/AuthContext';
 
@@ -44,8 +44,8 @@ const UserMenuButton = styled.button`
   }
 `;
 
-const UserMenu = () => {
-  const { user } = useAuth();
+const UserMenu = memo(() => {
+  const { user, logout } = useAuth();
 
   return (
     <UserMenuContainer>
@@ -53,8 +53,11 @@ const UserMenu = () => {
         <UserName>{user?.username || 'User'}</UserName>
         <UserEmail>{user?.email || 'user@example.com'}</UserEmail>
       </UserInfo>
+      <UserMenuButton onClick={logout}>
+        Logout
+      </UserMenuButton>
     </UserMenuContainer>
   );
-};
+});
 
 export default UserMenu;

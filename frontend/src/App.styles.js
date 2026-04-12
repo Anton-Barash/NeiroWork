@@ -291,22 +291,28 @@ export const ChatTitleEdit = styled.div`
 `;
 
 export const AnalyzeButton = styled.button`
-  background-color: #28a745;
+  background-color: #4CAF50;
   color: white;
   border: none;
-  border-radius: 4px;
-  padding: 8px 12px;
+  border-radius: 50px;
+  padding: 10px 20px;
   cursor: pointer;
   font-size: 14px;
-  transition: background-color 0.2s;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 
   &:hover:not(:disabled) {
-    background-color: #218838;
+    background-color: #45a049;
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
 
   &:disabled {
     background-color: #6c757d;
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
   }
 `;
 

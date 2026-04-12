@@ -21,12 +21,6 @@ export function useAnalysis() {
     });
     const [showGlobalPromptSettings, setShowGlobalPromptSettings] = useState(false);
 
-    // Auto-fetch global prompts on initialization
-    useEffect(() => {
-        console.log('useAnalysis hook initialized, calling fetchGlobalPrompts');
-        fetchGlobalPrompts();
-    }, []);
-
     const fetchGlobalPrompts = useCallback(async () => {
         console.log('fetchGlobalPrompts function called');
         try {
@@ -51,6 +45,12 @@ export function useAnalysis() {
             console.error('Error fetching global prompts:', err);
         }
     }, []);
+
+    // Auto-fetch global prompts on initialization
+    useEffect(() => {
+        console.log('useAnalysis hook initialized, calling fetchGlobalPrompts');
+        fetchGlobalPrompts();
+    }, [fetchGlobalPrompts]);
 
     const updateGlobalPrompt = useCallback(async (promptType, promptValue) => {
         try {

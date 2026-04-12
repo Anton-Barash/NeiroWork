@@ -1,10 +1,10 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import * as S from '../App.styles';
 import TypingIndicator from './TypingIndicator';
 
-const MessagesList = ({ messages, user, isLoading, formatTime }) => {
+const MessagesList = memo(({ messages, user, isLoading, formatTime }) => {
   const messagesEndRef = useRef(null);
 
   // Scroll to bottom when messages change
@@ -17,7 +17,7 @@ const MessagesList = ({ messages, user, isLoading, formatTime }) => {
       {
         messages.map((message) => {
           let content;
-          
+
           try {
             // Try to parse JSON content (for messages with images)
             const parsedContent = JSON.parse(message.content);
@@ -74,6 +74,6 @@ const MessagesList = ({ messages, user, isLoading, formatTime }) => {
       <div ref={messagesEndRef} />
     </S.MessagesContainer>
   );
-};
+});
 
 export default MessagesList;

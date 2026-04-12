@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import * as S from '../App.styles';
 import UserMenu from './UserMenu';
 
@@ -25,10 +25,12 @@ const Sidebar = React.memo(({
   const [activeChatMenu, setActiveChatMenu] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Filter chats based on search term
-  const filteredChats = chats.filter(chat =>
-    chat.topic.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter chats based on search term with memoization
+  const filteredChats = useMemo(() => {
+    return chats.filter(chat =>
+      chat.topic.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [chats, searchTerm]);
 
   // Close chat menu when clicking outside
   React.useEffect(() => {

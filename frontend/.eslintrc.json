@@ -1,0 +1,32 @@
+{
+    "env": {
+        "browser": true,
+        "es2021": true
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:react/recommended",
+        "plugin:react-hooks/recommended"
+    ],
+    "parserOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "module"
+    },
+    "plugins": [
+        "react",
+        "react-hooks",
+        "unused-imports"
+    ],
+    // ↓ Добавляем эту секцию (укажи свою версию React, например 18) ↓
+    "settings": {
+        "react": {
+            "version": "18" // если у тебя другая версия (17, 19) — подкорректируй
+        }
+    },
+    "rules": {
+        "unused-imports/no-unused-imports": "error",
+        "unused-imports/no-unused-vars": "warn",
+        "react-hooks/exhaustive-deps": "warn",
+        "react/no-unused-state": "warn"
+    }
+}
