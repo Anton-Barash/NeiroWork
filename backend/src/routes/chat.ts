@@ -223,7 +223,7 @@ const chatRoutes = async (app: FastifyInstance) => {
       }
 
       const chatCustomPromptResult = await pool.query(
-        'SELECT custom_prompt FROM chats WHERE id = $1',
+        'SELECT custom_prompt, use_custom_prompt FROM chats WHERE id = $1',
         [chatId]
       );
 
@@ -231,7 +231,7 @@ const chatRoutes = async (app: FastifyInstance) => {
       if (settingsResult.rows[0]?.dialog_analysis_prompt) {
         prompt = settingsResult.rows[0].dialog_analysis_prompt;
       }
-      if (chatCustomPromptResult.rows[0]?.custom_prompt) {
+      if (chatCustomPromptResult.rows[0]?.custom_prompt && chatCustomPromptResult.rows[0]?.use_custom_prompt) {
         prompt += `\n\nAdditional instructions: ${chatCustomPromptResult.rows[0].custom_prompt}`;
       }
 
@@ -337,21 +337,40 @@ const chatRoutes = async (app: FastifyInstance) => {
   app.get('/:chatId/custom-prompt', async (request: FastifyRequest<{ Params: { chatId: string } }>, reply: FastifyReply) => {
     try {
       const { chatId } = request.params;
-      const result = await pool.query('SELECT custom_prompt FROM chats WHERE id = $1', [chatId]);
+      const result = await pool.query('SELECT custom_prompt, use_custom_prompt FROM chats WHERE id = $1', [chatId]);
       if (result.rows.length === 0) return reply.status(404).send({ error: 'Chat not found' });
-      reply.send({ custom_prompt: result.rows[0].custom_prompt });
+      reply.send({
+        custom_prompt: result.rows[0].custom_prompt,
+        use_custom_prompt: result.rows[0].use_custom_prompt
+      });
     } catch (error) {
       reply.status(500).send({ error: 'Failed' });
     }
   });
 
-  app.put('/:chatId/custom-prompt', async (request: FastifyRequest<{ Params: { chatId: string }; Body: { custom_prompt: string } }>, reply: FastifyReply) => {
+  app.put('/:chatId/custom-prompt', async (request: FastifyRequest<{ Params: { chatId: string }; Body: { custom_prompt: string; use_custom_prompt?: boolean } }>, reply: FastifyReply) => {
     try {
       const { chatId } = request.params;
-      const { custom_prompt } = request.body;
+      const { custom_prompt, use_custom_prompt } = request.body;
       const result = await pool.query(
-        'UPDATE chats SET custom_prompt = $1 WHERE id = $2 RETURNING id',
-        [custom_prompt, chatId]
+        'UPDATE chats SET custom_prompt = $1, use_custom_prompt = $2 WHERE id = $3 RETURNING id',
+        [custom_prompt, use_custom_prompt !== undefined ? use_custom_prompt : true, chatId]
+      );
+      if (result.rows.length === 0) return reply.status(404).send({ error: 'Chat not found' });
+      reply.send({ success: true, message: 'Updated' });
+    } catch (error) {
+      reply.status(500).send({ error: 'Failed' });
+    }
+  });
+
+  // Toggle custom prompt usage
+  app.put('/:chatId/use-custom-prompt', async (request: FastifyRequest<{ Params: { chatId: string }; Body: { use_custom_prompt: boolean } }>, reply: FastifyReply) => {
+    try {
+      const { chatId } = request.params;
+      const { use_custom_prompt } = request.body;
+      const result = await pool.query(
+        'UPDATE chats SET use_custom_prompt = $1 WHERE id = $2 RETURNING id',
+        [use_custom_prompt, chatId]
       );
       if (result.rows.length === 0) return reply.status(404).send({ error: 'Chat not found' });
       reply.send({ success: true, message: 'Updated' });
@@ -374,6 +393,36 @@ const chatRoutes = async (app: FastifyInstance) => {
     } catch (error) {
       console.error('Update chat title error:', error);
       reply.status(500).send({ error: 'Failed to update chat title' });
+    }
+  });
+
+  // Test endpoint
+  app.get('/test', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const result = await pool.query('SELECT test FROM test LIMIT 1');
+      if (result.rows.length === 0) {
+        return reply.status(404).send({ error: 'Test data not found' });
+      }
+      reply.send({ test: result.rows[0].test });
+    } catch (error) {
+      console.error('Error fetching test data:', error);
+      reply.status(500).send({ error: 'Failed to fetch test data' });
+    }
+  });
+
+  // Update test data
+  app.put('/test', async (request: FastifyRequest<{ Body: { test: string } }>, reply: FastifyReply) => {
+    try {
+      const { test } = request.body;
+      // Update the first existing record
+      const result = await pool.query(
+        'UPDATE test SET test = $1 RETURNING test',
+        [test]
+      );
+      reply.send({ test: result.rows[0].test });
+    } catch (error) {
+      console.error('Error updating test data:', error);
+      reply.status(500).send({ error: 'Failed to update test data' });
     }
   });
 };

@@ -10,6 +10,7 @@ import MessagesList from './components/MessagesList';
 import FilesList from './components/FilesList';
 import InputArea from './components/InputArea';
 import NeiroWorkWindow from './components/NeiroWorkWindow';
+import Test from './components/Test';
 import { chatService } from './services/chatService';
 import { fileService } from './services/fileService';
 import { promptService } from './services/promptService';
@@ -25,6 +26,23 @@ const CreateChatModal = lazy(() => import('./components/modals/CreateChatModal')
 
 function App() {
   const { user, isAuthenticated, loading: authLoading, logout, company, setCompany } = useAuth();
+
+  // Check current path
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Render Test component for /test path
+  if (currentPath === '/test') {
+    return <Test />;
+  }
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showCompanySelector, setShowCompanySelector] = useState(false);
   const [showCreateCompany, setShowCreateCompany] = useState(false);
@@ -77,6 +95,7 @@ function App() {
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [neiroWorkLoading, setNeiroWorkLoading] = useState(false);
   const [customPrompt, setCustomPrompt] = useState('');
+  const [useCustomPrompt, setUseCustomPrompt] = useState(false);
   const [showCustomPromptSettings, setShowCustomPromptSettings] = useState(false);
   const [promptSettings, setPromptSettings] = useState({
     dialog_analysis_prompt: '',
@@ -103,7 +122,6 @@ function App() {
     fetchGlobalPromptOnce();
   }, []);
   const [showGlobalPromptSettings, setShowGlobalPromptSettings] = useState(false);
-  const [useCustomPrompt, setUseCustomPrompt] = useState(false);
   const [showSidebarMenu, setShowSidebarMenu] = useState(false);
   const [showChatMenu, setShowChatMenu] = useState(false);
   const [showNeiroWorkMenu, setShowNeiroWorkMenu] = useState(false);
@@ -234,6 +252,7 @@ function App() {
     try {
       const prompt = await chatService.getCustomPrompt(currentChat.id);
       setCustomPrompt(prompt.custom_prompt || '');
+      setUseCustomPrompt(prompt.use_custom_prompt || false);
     } catch (error) {
       console.error('Error fetching custom prompt:', error);
     }
@@ -242,7 +261,7 @@ function App() {
   const updateCustomPrompt = async () => {
     if (!currentChat) return;
     try {
-      await chatService.updateCustomPrompt(currentChat.id, customPrompt);
+      await chatService.updateCustomPrompt(currentChat.id, customPrompt, useCustomPrompt);
       setShowCustomPromptSettings(false);
     } catch (error) {
       console.error('Error updating custom prompt:', error);

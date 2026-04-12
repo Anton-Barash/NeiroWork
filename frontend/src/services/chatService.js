@@ -114,10 +114,11 @@ export const chatService = {
   },
 
   // Update custom prompt for a chat
-  updateCustomPrompt: async (chatId, customPrompt) => {
+  updateCustomPrompt: async (chatId, customPrompt, useCustomPrompt) => {
     try {
       await axios.put(`/api/chat/${chatId}/custom-prompt`, {
-        custom_prompt: customPrompt
+        custom_prompt: customPrompt,
+        use_custom_prompt: useCustomPrompt
       });
       return true;
     } catch (error) {

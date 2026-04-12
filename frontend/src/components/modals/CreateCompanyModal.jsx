@@ -148,117 +148,117 @@ const ButtonGroup = styled.div`
 `;
 
 const CreateCompanyModal = ({ isOpen, onClose, onCompanyCreated }) => {
-    const [formData, setFormData] = useState({
-        name: '',
-        description: ''
-    });
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    description: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-        // Очищаем сообщения при изменении формы
-        if (error) setError('');
-        if (success) setSuccess('');
-    };
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    // Очищаем сообщения при изменении формы
+    if (error) setError('');
+    if (success) setSuccess('');
+  };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        if (!formData.name.trim()) {
-            setError('Название компании обязательно');
-            return;
-        }
+    if (!formData.name.trim()) {
+      setError('Название компании обязательно');
+      return;
+    }
 
-        setLoading(true);
-        setError('');
-        setSuccess('');
+    setLoading(true);
+    setError('');
+    setSuccess('');
 
-        try {
-            const response = await axios.post('/api/companies', formData);
+    try {
+      const response = await axios.post('/api/companies', formData);
 
-            setSuccess('Компания успешно создана!');
-            setFormData({ name: '', description: '' });
+      setSuccess('Компания успешно создана!');
+      setFormData({ name: '', description: '' });
 
-            // Уведомляем родительский компонент о создании компании
-            onCompanyCreated?.(response.data);
+      // Уведомляем родительский компонент о создании компании
+      onCompanyCreated?.(response.data);
 
-            // Закрываем модальное окно через 2 секунды
-            setTimeout(() => {
-                onClose();
-            }, 2000);
-
-        } catch (error) {
-            console.error('Error creating company:', error);
-            setError(error.response?.data?.error || 'Ошибка создания компании');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleCancel = () => {
-        setFormData({ name: '', description: '' });
-        setError('');
-        setSuccess('');
+      // Закрываем модальное окно через 2 секунды
+      setTimeout(() => {
         onClose();
-    };
+      }, 2000);
 
-    if (!isOpen) return null;
+    } catch (error) {
+      console.error('Error creating company:', error);
+      setError(error.response?.data?.error || 'Ошибка создания компании');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
-        <ModalOverlay onClick={onClose}>
-            <ModalContent onClick={(e) => e.stopPropagation()}>
-                <ModalHeader>
-                    <ModalTitle>Создать компанию</ModalTitle>
-                    <CloseButton onClick={onClose}>×</CloseButton>
-                </ModalHeader>
+  const handleCancel = () => {
+    setFormData({ name: '', description: '' });
+    setError('');
+    setSuccess('');
+    onClose();
+  };
 
-                <form onSubmit={handleSubmit}>
-                    <FormGroup>
-                        <Label htmlFor="name">Название компании *</Label>
-                        <Input
-                            type="text"
-                            id="name"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleInputChange}
-                            placeholder="Введите название компании"
-                            disabled={loading}
-                        />
-                    </FormGroup>
+  if (!isOpen) return null;
 
-                    <FormGroup>
-                        <Label htmlFor="description">Описание</Label>
-                        <TextArea
-                            id="description"
-                            name="description"
-                            value={formData.description}
-                            onChange={handleInputChange}
-                            placeholder="Описание компании (необязательно)"
-                            disabled={loading}
-                        />
-                    </FormGroup>
+  return (
+    <ModalOverlay onClick={onClose}>
+      <ModalContent onClick={(e) => e.stopPropagation()}>
+        <ModalHeader>
+          <ModalTitle>Создать компанию</ModalTitle>
+          <CloseButton onClick={onClose}>×</CloseButton>
+        </ModalHeader>
 
-                    {error && <ErrorMessage>{error}</ErrorMessage>}
-                    {success && <SuccessMessage>{success}</SuccessMessage>}
+        <form onSubmit={handleSubmit}>
+          <FormGroup>
+            <Label htmlFor="name">Название компании *</Label>
+            <Input
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleInputChange}
+              placeholder="Введите название компании"
+              disabled={loading}
+            />
+          </FormGroup>
 
-                    <ButtonGroup>
-                        <SecondaryButton type="button" onClick={handleCancel} disabled={loading}>
-                            Отмена
-                        </SecondaryButton>
-                        <PrimaryButton type="submit" disabled={loading}>
-                            {loading ? 'Создание...' : 'Создать компанию'}
-                        </PrimaryButton>
-                    </ButtonGroup>
-                </form>
-            </ModalContent>
-        </ModalOverlay>
-    );
+          <FormGroup>
+            <Label htmlFor="description">Описание</Label>
+            <TextArea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              placeholder="Описание компании (необязательно)"
+              disabled={loading}
+            />
+          </FormGroup>
+
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+          {success && <SuccessMessage>{success}</SuccessMessage>}
+
+          <ButtonGroup>
+            <SecondaryButton type="button" onClick={handleCancel} disabled={loading}>
+              Отмена
+            </SecondaryButton>
+            <PrimaryButton type="submit" disabled={loading}>
+              {loading ? 'Создание...' : 'Создать компанию'}
+            </PrimaryButton>
+          </ButtonGroup>
+        </form>
+      </ModalContent>
+    </ModalOverlay>
+  );
 };
 
 export default CreateCompanyModal;

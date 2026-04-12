@@ -85,6 +85,7 @@ const createTables = async () => {
         id SERIAL PRIMARY KEY,
         topic VARCHAR(255) NOT NULL,
         custom_prompt TEXT DEFAULT '',
+        use_custom_prompt BOOLEAN DEFAULT FALSE,
         company_id INTEGER REFERENCES companies(id) ON DELETE CASCADE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
@@ -149,6 +150,23 @@ const createTables = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+
+    // Create test table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS test (
+        id SERIAL PRIMARY KEY,
+        test TEXT NOT NULL UNIQUE
+      )
+    `);
+
+    // Clear existing test data to ensure only one record
+    await pool.query(`DELETE FROM test`);
+
+    // Insert test data
+    await pool.query(`
+      INSERT INTO test (test)
+      VALUES ('test')
     `);
 
     // Insert default prompts if they don't exist

@@ -132,101 +132,101 @@ const ButtonGroup = styled.div`
 `;
 
 const JoinCompanyModal = ({ isOpen, onClose, onCompanyJoined }) => {
-    const [formData, setFormData] = useState({
-        companyId: ''
-    });
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+  const [formData, setFormData] = useState({
+    companyId: ''
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
-    const handleInputChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
-        if (error) setError('');
-        if (success) setSuccess('');
-    };
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    if (error) setError('');
+    if (success) setSuccess('');
+  };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-        if (!formData.companyId.trim()) {
-            setError('Уникальный ID компании обязательно');
-            return;
-        }
+    if (!formData.companyId.trim()) {
+      setError('Уникальный ID компании обязательно');
+      return;
+    }
 
-        setLoading(true);
-        setError('');
-        setSuccess('');
+    setLoading(true);
+    setError('');
+    setSuccess('');
 
-        try {
-            const response = await axios.post('/api/users/companies/join', formData);
+    try {
+      const response = await axios.post('/api/users/companies/join', formData);
 
-            setSuccess('Вы успешно присоединились к компании!');
-            setFormData({ companyId: '' });
+      setSuccess('Вы успешно присоединились к компании!');
+      setFormData({ companyId: '' });
 
-            onCompanyJoined?.(response.data);
+      onCompanyJoined?.(response.data);
 
-            setTimeout(() => {
-                onClose();
-            }, 2000);
-
-        } catch (error) {
-            console.error('Error joining company:', error);
-            setError(error.response?.data?.error || 'Ошибка присоединения к компании');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleCancel = () => {
-        setFormData({ companyId: '' });
-        setError('');
-        setSuccess('');
+      setTimeout(() => {
         onClose();
-    };
+      }, 2000);
 
-    if (!isOpen) return null;
+    } catch (error) {
+      console.error('Error joining company:', error);
+      setError(error.response?.data?.error || 'Ошибка присоединения к компании');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
-        <ModalOverlay onClick={onClose}>
-            <ModalContent onClick={(e) => e.stopPropagation()}>
-                <ModalHeader>
-                    <ModalTitle>Присоединиться к компании</ModalTitle>
-                    <CloseButton onClick={onClose}>×</CloseButton>
-                </ModalHeader>
+  const handleCancel = () => {
+    setFormData({ companyId: '' });
+    setError('');
+    setSuccess('');
+    onClose();
+  };
 
-                <form onSubmit={handleSubmit}>
-                    <FormGroup>
-                        <Label htmlFor="companyId">Уникальный ID компании</Label>
-                        <Input
-                            type="text"
-                            id="companyId"
-                            name="companyId"
-                            value={formData.companyId}
-                            onChange={handleInputChange}
-                            placeholder="Введите уникальный ID компании"
-                            disabled={loading}
-                        />
-                    </FormGroup>
+  if (!isOpen) return null;
 
-                    {error && <ErrorMessage>{error}</ErrorMessage>}
-                    {success && <SuccessMessage>{success}</SuccessMessage>}
+  return (
+    <ModalOverlay onClick={onClose}>
+      <ModalContent onClick={(e) => e.stopPropagation()}>
+        <ModalHeader>
+          <ModalTitle>Присоединиться к компании</ModalTitle>
+          <CloseButton onClick={onClose}>×</CloseButton>
+        </ModalHeader>
 
-                    <ButtonGroup>
-                        <SecondaryButton type="button" onClick={handleCancel} disabled={loading}>
-                            Отмена
-                        </SecondaryButton>
-                        <PrimaryButton type="submit" disabled={loading}>
-                            {loading ? 'Присоединение...' : 'Присоединиться'}
-                        </PrimaryButton>
-                    </ButtonGroup>
-                </form>
-            </ModalContent>
-        </ModalOverlay>
-    );
+        <form onSubmit={handleSubmit}>
+          <FormGroup>
+            <Label htmlFor="companyId">Уникальный ID компании</Label>
+            <Input
+              type="text"
+              id="companyId"
+              name="companyId"
+              value={formData.companyId}
+              onChange={handleInputChange}
+              placeholder="Введите уникальный ID компании"
+              disabled={loading}
+            />
+          </FormGroup>
+
+          {error && <ErrorMessage>{error}</ErrorMessage>}
+          {success && <SuccessMessage>{success}</SuccessMessage>}
+
+          <ButtonGroup>
+            <SecondaryButton type="button" onClick={handleCancel} disabled={loading}>
+              Отмена
+            </SecondaryButton>
+            <PrimaryButton type="submit" disabled={loading}>
+              {loading ? 'Присоединение...' : 'Присоединиться'}
+            </PrimaryButton>
+          </ButtonGroup>
+        </form>
+      </ModalContent>
+    </ModalOverlay>
+  );
 };
 
 export default JoinCompanyModal;
