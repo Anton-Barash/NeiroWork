@@ -84,6 +84,27 @@ function App() {
       }
     }
   };
+
+  // Update draft when message changes
+  const handleMessageChange = (value) => {
+    setNewMessage(value);
+    if (currentChat) {
+      if (value.trim()) {
+        // Save draft if there's text
+        setDrafts(prev => ({
+          ...prev,
+          [currentChat.id]: value
+        }));
+      } else {
+        // Remove draft if text is empty
+        setDrafts(prev => {
+          const newDrafts = { ...prev };
+          delete newDrafts[currentChat.id];
+          return newDrafts;
+        });
+      }
+    }
+  };
   const [messages, setMessages] = useState([]);
   const [files, setFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -535,7 +556,7 @@ function App() {
                   {/* Input Area */}
                   <InputArea
                     newMessage={newMessage}
-                    setNewMessage={setNewMessage}
+                    setNewMessage={handleMessageChange}
                     uploadedFiles={uploadedFiles}
                     uploadedImages={uploadedImages}
                     isLoading={isLoading}
