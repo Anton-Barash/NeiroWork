@@ -9,6 +9,7 @@ import ChatHeader from './components/ChatHeader';
 import MessagesList from './components/MessagesList';
 import FilesList from './components/FilesList';
 import InputArea from './components/InputArea';
+
 import NeiroWorkWindow from './components/NeiroWorkWindow';
 import Test from './components/Test';
 import { chatService } from './services/chatService';
@@ -537,6 +538,8 @@ function App() {
                     deleteChat={deleteChat}
                     updateChat={updateChat}
                   />
+
+
 
                   {/* Messages */}
                   <MessagesList

@@ -26,11 +26,9 @@ const Sidebar = React.memo(({
   const [searchTerm, setSearchTerm] = useState('');
 
   // Filter chats based on search term with memoization
-  const filteredChats = useMemo(() => {
-    return chats.filter(chat =>
-      chat.topic.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [chats, searchTerm]);
+  const filteredChats = searchTerm ? chats.filter(chat =>
+    chat.topic.toLowerCase().includes(searchTerm.toLowerCase())
+  ) : chats;
 
   // Close chat menu when clicking outside
   React.useEffect(() => {
@@ -53,9 +51,6 @@ const Sidebar = React.memo(({
           }}>
             NeiroWork
           </S.AppTitleButton>
-          <S.CompanySelectorButton onClick={() => setShowCompanySelector(true)}>
-            {company?.name || 'Select Company'}
-          </S.CompanySelectorButton>
           <S.MoreButton className="sidebar-menu" onClick={() => setShowSidebarMenu(!showSidebarMenu)}>
             ...
           </S.MoreButton>
@@ -70,17 +65,22 @@ const Sidebar = React.memo(({
             </S.DropdownMenu>
           )}
         </S.SidebarTopRow>
-        <S.NewChatButton onClick={() => setShowModal(true)}>
-          + New Chat
-        </S.NewChatButton>
-        <S.SearchInput
-          type="text"
-          placeholder="Search chats..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
       </S.SidebarHeader>
       <S.ChatList>
+        <div style={{ padding: '10px', overflow: 'visible' }}>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', overflow: 'visible' }}>
+            <S.SearchInput
+              type="text"
+              placeholder="Search chats..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ flex: 1 }}
+            />
+            <S.NewChatButton onClick={() => setShowModal(true)} data-title="New Chat">
+              +
+            </S.NewChatButton>
+          </div>
+        </div>
         {
           filteredChats.map((chat) => (
             <S.ChatItemWithMenu
@@ -151,7 +151,10 @@ const Sidebar = React.memo(({
       </S.ChatList>
 
       {/* User Menu */}
-      <UserMenu />
+      <UserMenu 
+        setShowCompanySelector={setShowCompanySelector}
+        company={company}
+      />
     </S.Sidebar>
   );
 });

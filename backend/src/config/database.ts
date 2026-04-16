@@ -178,17 +178,18 @@ const createTables = async () => {
       ON CONFLICT (name) DO NOTHING
     `);
 
-    // Insert default user and company for testing
-    await pool.query(`
-      INSERT INTO companies (name, description, code, unique_id, created_by) 
-      VALUES ('company1', 'Default company for user1', 'COMPANY1', 'COMPANY1_UNIQUE_ID', 1)
-      ON CONFLICT (code) DO NOTHING
-    `);
-
+    // Insert default user first
     await pool.query(`
       INSERT INTO users (username, password, email) 
       VALUES ('user1', 'password123', 'user1@example.com')
       ON CONFLICT (username) DO NOTHING
+    `);
+
+    // Insert default company for testing
+    await pool.query(`
+      INSERT INTO companies (name, description, code, unique_id, created_by) 
+      VALUES ('company1', 'Default company for user1', 'COMPANY1', 'COMPANY1_UNIQUE_ID', 1)
+      ON CONFLICT (code) DO NOTHING
     `);
 
     // Add default user to company as owner

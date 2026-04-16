@@ -52,15 +52,16 @@ const MessagesList = memo(({ messages, user, isLoading, formatTime }) => {
           const senderName = message.username || (message.role === 'user' ? (user?.username || 'User') : 'AI Assistant');
           const avatarInitial = senderName.charAt(0).toUpperCase();
 
+          const isCurrentUser = message.user_id === user?.id;
           return (
-            <S.MessageContainer key={message.id} role={message.role}>
-              <S.Avatar role={message.role}>{avatarInitial}</S.Avatar>
+            <S.MessageContainer key={message.id} role={isCurrentUser ? 'user' : 'other'}>
+              <S.Avatar role={isCurrentUser ? 'user' : 'other'}>{avatarInitial}</S.Avatar>
               <S.MessageInfoColumn>
-                <S.SenderName role={message.role}>{senderName}</S.SenderName>
-                <S.MessageBubble role={message.role}>
+                <S.SenderName role={isCurrentUser ? 'user' : 'other'}>{senderName}</S.SenderName>
+                <S.MessageBubble role={isCurrentUser ? 'user' : 'other'}>
                   <S.MessageContent>{content}</S.MessageContent>
                 </S.MessageBubble>
-                <S.MessageTime role={message.role}>{formatTime(message.created_at)}</S.MessageTime>
+                <S.MessageTime role={isCurrentUser ? 'user' : 'other'}>{formatTime(message.created_at)}</S.MessageTime>
               </S.MessageInfoColumn>
             </S.MessageContainer>
           );
